@@ -6,19 +6,41 @@ const Login = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
-    setTimeout(() => {
-      if (email && password) {
-        onLogin(email); 
+    const endpoint = isRegistering ? 'register' : 'login';
+
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        if (isRegistering) {
+          alert("Account created successfully! Please log in.");
+          setIsRegistering(false);
+        } else {
+          onLogin(data.email);
+        }
       } else {
-        alert("Please enter a valid email and password (demo)");
-        setIsLoading(false);
+        setError(data.detail || 'An error occurred. Please try again.');
       }
-    }, 1500);
+    } catch (err) {
+      setError('Cannot connect to the server.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
