@@ -14,6 +14,12 @@ function App() {
     setIsLoggedIn(true);
   };
 
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUserEmail('');
+    setIsNavbarOpen(false);
+  };
+
   const [isNavbarOpen, setIsNavbarOpen] = useState(false);
   
   
@@ -44,6 +50,7 @@ function App() {
         onClose={() => setIsNavbarOpen(false)} 
         activeTab={activeTab}
         onNavigate={handleNavigate}
+        onLogout={handleLogout}
       />
 
       

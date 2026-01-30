@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, LayoutGrid, FileText, BarChart3, LogOut, Settings } from 'lucide-react';
 
-const Navbar = ({ isOpen, onClose, onNavigate, activeTab }) => {
+const Navbar = ({ isOpen, onClose, onNavigate, activeTab, onLogout }) => {
   return (
     <>
      
@@ -68,7 +68,9 @@ const Navbar = ({ isOpen, onClose, onNavigate, activeTab }) => {
             <span className="font-medium">Settings</span>
           </button>
           
-          <button className="flex items-center w-full px-4 py-3 text-red-400 hover:bg-red-900/20 rounded-xl transition-all mt-1">
+          <button 
+          className="flex items-center w-full px-4 py-3 text-red-400 hover:bg-red-900/20 rounded-xl transition-all mt-1"
+            onClick={onLogout}>
             <LogOut className="w-5 h-5 mr-3" />
             <span className="font-medium">Sign Out</span>
           </button>
