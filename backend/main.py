@@ -1,8 +1,9 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-
+import os
+import shutil
 import models
 import authentication
 from data import engine, get_db ,Base
@@ -10,6 +11,9 @@ from data import engine, get_db ,Base
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+UPLOAD_DIR = "Uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,3 +52,27 @@ def login(user : UserAuth, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     return {"message": "Login successful", "email": db_user.email}
+
+@app.post("/upload")
+async def upload_document(
+    file: UploadFile = File(...), 
+    email: str = Form(...), 
+    db: Session = Depends(get_db)
+):
+    
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    
+    file_location = f"{UPLOAD_DIR}/{file.filename}"
+    with open(file_location, "wb+") as file_object:
+        shutil.copyfileobj(file.file, file_object)
+
+    
+    new_doc = models.Document(filename=file.filename, user_id=user.id)
+    db.add(new_doc)
+    db.commit()
+    db.refresh(new_doc)
+
+    return {"message": "File uploaded successfully", "filename": file.filename}

@@ -25,11 +25,37 @@ function App() {
   
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
-    if (file) {
-      alert(`File "${file.name}" ready for upload!`);
+    if (!file) return;
+
+   
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('email', userEmail); 
+
+    try {
+      
+      const response = await fetch('http://127.0.0.1:8000/upload', {
+        method: 'POST',
+        
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`File "${file.name}" uploaded successfully!`);
+      } else {
+        alert('Upload failed: ' + (data.detail || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Cannot connect to the server to upload the file.');
     }
+
+    
+    event.target.value = null;
   };
 
   const handleNavigate = (tab) => {
