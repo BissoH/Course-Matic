@@ -76,3 +76,13 @@ async def upload_document(
     db.refresh(new_doc)
 
     return {"message": "File uploaded successfully", "filename": file.filename}
+
+@app.get("/documents")
+def get_documents(email: str, db: Session = Depends(get_db)):
+    
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    
+    return user.documents

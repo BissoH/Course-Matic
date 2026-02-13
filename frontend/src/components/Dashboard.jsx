@@ -1,7 +1,7 @@
 import React from "react";
 import {Upload, AlertTriangle, CheckCircle,} from 'lucide-react';
 
-const Dashboard = ({onUpload}) => 
+const Dashboard = ({onUpload, documents = [] }) => 
 {
     return (
         <div className="p-6 space-y-6 pb-24">
@@ -58,6 +58,24 @@ const Dashboard = ({onUpload}) =>
           />
         </label>
       </div>
+
+      <div className="mt-8">
+        <h3 className="font-bold text-gray-900 text-xl mb-4">Your Files</h3>
+        
+        {documents.length === 0 ? (
+          <p className="text-gray-500 italic">No files uploaded yet.</p>
+        ) : (
+          <div className="grid gap-3">
+            {documents.map((doc) => (
+              <div key={doc.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                <span className="font-medium text-gray-800">{doc.filename}</span>
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Ready</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
     </div>
 
 
