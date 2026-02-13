@@ -8,10 +8,12 @@ function App() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
   const [userEmail, setUserEmail] = useState('');
+  const [documents, setDocuments] = useState([]);
 
   const handleLogin = (email) => {
     setUserEmail(email);
     setIsLoggedIn(true);
+    fetchDocuments(email);
   };
 
   const handleLogout = () => {
@@ -24,6 +26,18 @@ function App() {
   
   
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  const fetchDocuments = async (email) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/documents?email=${email}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDocuments(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch documents:", error);
+    }
+  };
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -46,6 +60,10 @@ function App() {
 
       if (response.ok) {
         alert(`File "${file.name}" uploaded successfully!`);
+        
+        fetchDocuments(userEmail);
+
+
       } else {
         alert('Upload failed: ' + (data.detail || 'Unknown error'));
       }
@@ -98,7 +116,7 @@ function App() {
 
         
         <main className="w-full">
-           {activeTab === 'dashboard' && <Dashboard onUpload={handleFileUpload} />}
+           {<Dashboard onUpload={handleFileUpload} documents={documents} />}
            
            
            {activeTab === 'quiz' && (
