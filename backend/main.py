@@ -7,10 +7,13 @@ import shutil
 import models
 import authentication
 from data import engine, get_db ,Base
+from fastapi.staticfiles import StaticFiles
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 UPLOAD_DIR = "Uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
