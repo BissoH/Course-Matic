@@ -1,7 +1,7 @@
 import React, {useState} from "react";
-import {Upload, AlertTriangle, CheckCircle, Eye , X} from 'lucide-react';
+import {Upload, AlertTriangle, CheckCircle, Eye , X, Trash2} from 'lucide-react';
 
-const Dashboard = ({onUpload, documents = [] }) => 
+const Dashboard = ({onUpload, documents = [], onDelete }) => 
 {
   const[selectedDoc, setSelectedDoc] = useState(null);
 
@@ -81,12 +81,25 @@ const Dashboard = ({onUpload, documents = [] }) =>
                 </div>
 
                 
-                <button 
-                  onClick={() => setSelectedDoc(doc)}
-                  className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                >
-                  <Eye className="w-5 h-5" />
-                </button>
+                <div className="flex gap-2">
+                  
+                  <button 
+                    onClick={() => setSelectedDoc(doc)}
+                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="View"
+                  >
+                    <Eye className="w-5 h-5" />
+                  </button>
+
+                 
+                  <button 
+                    onClick={() => onDelete(doc.id)}
+                    className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
 
               </div>
             ))}
