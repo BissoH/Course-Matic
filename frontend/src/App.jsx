@@ -39,6 +39,26 @@ function App() {
     }
   };
 
+  const handleDeleteDocument = async (docId) => {
+    const isConfirmed = window.confirm("Are you sure you want to delete this file?");
+    if (!isConfirmed) return;
+
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/documents/${docId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+
+        setDocuments(documents.filter(doc => doc.id !== docId));
+      } else {
+        alert("Failed to delete file.");
+      }
+    } catch (error) {
+      console.error("Error deleting file:", error);
+    }
+  };
+
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -116,7 +136,7 @@ function App() {
 
         
         <main className="w-full">
-           {<Dashboard onUpload={handleFileUpload} documents={documents} />}
+           {<Dashboard onUpload={handleFileUpload} documents={documents} onDelete={handleDeleteDocument} />}
            
            
            {activeTab === 'quiz' && (
