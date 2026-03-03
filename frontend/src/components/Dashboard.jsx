@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import {Upload, AlertTriangle, CheckCircle, Eye , X, Trash2} from 'lucide-react';
+import {Upload, AlertTriangle, CheckCircle, Eye , X, Trash2, Download} from 'lucide-react';
 
 const Dashboard = ({onUpload, documents = [], onDelete }) => 
 {
@@ -55,7 +55,7 @@ const Dashboard = ({onUpload, documents = [], onDelete }) =>
           </span>
           <input 
             type="file" 
-            accept=".pdf"
+            accept=".pdf,.docx,.pptx,.txt"
             onChange={onUpload}
             className="hidden"
           />
@@ -83,15 +83,25 @@ const Dashboard = ({onUpload, documents = [], onDelete }) =>
                 
                 <div className="flex gap-2">
                   
-                  <button 
-                    onClick={() => setSelectedDoc(doc)}
-                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="View"
-                  >
-                    <Eye className="w-5 h-5" />
-                  </button>
-
-                 
+                  {doc.filename.toLowerCase().endsWith('.pdf') ? (
+                    <button 
+                      onClick={() => setSelectedDoc(doc)}
+                      className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="View PDF"
+                    >
+                      <Eye className="w-5 h-5" />
+                    </button>
+                  ) : (
+                    <a 
+                      href={`http://127.0.0.1:8000/uploads/${doc.filename}`}
+                      download
+                      className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors flex"
+                      title="Download File"
+                    >
+                      <Download className="w-5 h-5" />
+                    </a>
+                  )}
+                  
                   <button 
                     onClick={() => onDelete(doc.id)}
                     className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -100,7 +110,6 @@ const Dashboard = ({onUpload, documents = [], onDelete }) =>
                     <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
-
               </div>
             ))}
           </div>
