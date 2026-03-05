@@ -8,6 +8,7 @@ import models
 import authentication
 from data import engine, get_db ,Base
 from fastapi.staticfiles import StaticFiles
+from extractor import extract_text
 
 Base.metadata.create_all(bind=engine)
 
@@ -71,6 +72,14 @@ async def upload_document(
     file_location = f"{UPLOAD_DIR}/{file.filename}"
     with open(file_location, "wb+") as file_object:
         shutil.copyfileobj(file.file, file_object)
+
+    print(f"Reading file: {file.filename}...")
+    extracted_text = extract_text(file_location)
+    
+    if extracted_text:
+        print(f"\n--- SUCCESS! First 300 characters ---\n{extracted_text[:300]}...\n-------------------------------------\n")
+    else:
+        print("\n--- WARNING: No text could be extracted! ---\n")
 
     
     new_doc = models.Document(filename=file.filename, user_id=user.id)
