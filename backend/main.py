@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Form
+from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -6,9 +6,10 @@ import os
 import shutil
 import models
 import authentication
-from data import engine, get_db ,Base
+from data import engine, get_db, Base
 from fastapi.staticfiles import StaticFiles
 from extractor import extract_text
+from auth_utils import create_access_token, get_current_user
 
 Base.metadata.create_all(bind=engine)
 
@@ -47,7 +48,7 @@ def register(user: UserAuth, db: Session = Depends(get_db)):
 
 
 @app.post("/login")
-def login(user : UserAuth, db: Session = Depends(get_db)):
+def login(user: UserAuth, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if not db_user or not authentication.verify_password(user.password, db_user.hashed_password):
         raise HTTPException(
@@ -55,18 +56,16 @@ def login(user : UserAuth, db: Session = Depends(get_db)):
             detail="Invalid email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return {"message": "Login successful", "email": db_user.email}
+    access_token = create_access_token(data={"sub": db_user.email})
+    return {"access_token": access_token, "token_type": "bearer", "email": db_user.email}
 
 @app.post("/upload")
 async def upload_document(
-    file: UploadFile = File(...), 
-    email: str = Form(...), 
-    db: Session = Depends(get_db)
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
-    
-    user = db.query(models.User).filter(models.User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    user = current_user
 
     
     file_location = f"{UPLOAD_DIR}/{file.filename}"
@@ -90,17 +89,11 @@ async def upload_document(
     return {"message": "File uploaded successfully", "filename": file.filename}
 
 @app.get("/documents")
-def get_documents(email: str, db: Session = Depends(get_db)):
-    
-    user = db.query(models.User).filter(models.User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    
-    return user.documents
+def get_documents(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    return current_user.documents
 
 @app.delete("/documents/{doc_id}")
-def delete_document(doc_id: int, db: Session = Depends(get_db)):
+def delete_document(doc_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     
     doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
     if not doc:
