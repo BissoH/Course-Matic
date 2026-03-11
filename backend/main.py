@@ -10,6 +10,7 @@ from data import engine, get_db, Base
 from fastapi.staticfiles import StaticFiles
 from extractor import extract_text
 from auth_utils import create_access_token, get_current_user
+from llm_service import get_quiz_from_ollama
 
 Base.metadata.create_all(bind=engine)
 
@@ -91,6 +92,70 @@ async def upload_document(
 @app.get("/documents")
 def get_documents(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     return current_user.documents
+
+@app.post("/quiz/generate")
+def generate_quiz(doc_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    doc = db.query(models.Document).filter(models.Document.id == doc_id, models.Document.user_id == current_user.id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    file_path = f"{UPLOAD_DIR}/{doc.filename}"
+    text = extract_text(file_path)
+    if not text:
+        raise HTTPException(status_code=422, detail="Could not extract text from document")
+
+    raw_questions = get_quiz_from_ollama(text)
+    if not raw_questions:
+        raise HTTPException(status_code=502, detail="AI failed to generate questions")
+
+    quiz = models.Quiz(document_id=doc.id, title=f"Quiz: {doc.filename}")
+    db.add(quiz)
+    db.flush()
+
+    for q in raw_questions:
+        options = q.get("options", [])
+        question = models.Question(
+            quiz_id=quiz.id,
+            question_text=q.get("question", ""),
+            option_a=options[0] if len(options) > 0 else "",
+            option_b=options[1] if len(options) > 1 else "",
+            option_c=options[2] if len(options) > 2 else "",
+            option_d=options[3] if len(options) > 3 else "",
+            correct_answer=q.get("answer", ""),
+            explanation=q.get("explanation", "")
+        )
+        db.add(question)
+
+    db.commit()
+    db.refresh(quiz)
+    return {"quiz_id": quiz.id}
+
+@app.get("/quiz/{quiz_id}")
+def get_quiz(quiz_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    quiz = db.query(models.Quiz).filter(models.Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+
+    questions = []
+    for q in quiz.questions:
+        questions.append({
+            "id": q.id,
+            "question_text": q.question_text,
+            "option_a": q.option_a,
+            "option_b": q.option_b,
+            "option_c": q.option_c,
+            "option_d": q.option_d,
+        })
+
+    return {"quiz_id": quiz.id, "title": quiz.title, "questions": questions}
+
+@app.get("/documents/{doc_id}/quizzes")
+def get_quizzes_for_document(doc_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    doc = db.query(models.Document).filter(models.Document.id == doc_id, models.Document.user_id == current_user.id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    return [{"quiz_id": q.id, "title": q.title, "created_at": q.created_at} for q in doc.quizzes]
 
 @app.delete("/documents/{doc_id}")
 def delete_document(doc_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
