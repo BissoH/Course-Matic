@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from typing import Dict
 import os
 import shutil
 import models
@@ -32,6 +33,10 @@ app.add_middleware(
 class UserAuth(BaseModel):
     email: str
     password: str
+
+class QuizSubmission(BaseModel):
+    answers: Dict[int, str]
+
 
 @app.post("/register")
 def register(user: UserAuth, db: Session = Depends(get_db)):
@@ -172,3 +177,60 @@ def delete_document(doc_id: int, db: Session = Depends(get_db), current_user: mo
     db.commit()
     
     return {"message": "Document deleted successfully"}
+
+@app.post("/quiz/{quiz_id}/submit")
+def submit_quiz(
+    quiz_id: int,
+    submission: QuizSubmission,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    quiz = db.query(models.Quiz).join(models.Document).filter(
+        models.Quiz.id == quiz_id,
+        models.Document.user_id == current_user.id
+    ).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+
+    score = 0
+    breakdown = []
+
+    for question in quiz.questions:
+        selected = submission.answers.get(question.id)
+        if selected is None:
+            continue
+
+        is_correct = selected.strip().upper() == question.correct_answer.strip().upper()
+        if is_correct:
+            score += 1
+
+        db.add(models.UserAnswer(
+            user_id=current_user.id,
+            question_id=question.id,
+            selected_answer=selected,
+            is_correct=is_correct,
+        ))
+
+        breakdown.append({
+            "question_id": question.id,
+            "question_text": question.question_text,
+            "option_a": question.option_a,
+            "option_b": question.option_b,
+            "option_c": question.option_c,
+            "option_d": question.option_d,
+            "your_answer": selected,
+            "correct_answer": question.correct_answer,
+            "is_correct": is_correct,
+            "explanation": question.explanation,
+        })
+
+    db.commit()
+
+    total = len(quiz.questions)
+    return {
+        "quiz_id": quiz_id,
+        "score": score,
+        "total": total,
+        "percentage": round((score / total) * 100, 1) if total > 0 else 0,
+        "breakdown": breakdown,
+    }
