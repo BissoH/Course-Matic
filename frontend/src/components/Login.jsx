@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../utils/api';
 import { LogIn, User, Lock, ArrowRight } from 'lucide-react';
 
 const Login = ({ onLogin }) => {
@@ -13,31 +14,20 @@ const Login = ({ onLogin }) => {
     setIsLoading(true);
     setError('');
 
-    const endpoint = isRegistering ? 'register' : 'login';
+    const endpoint = isRegistering ? '/register' : '/login';
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        if (isRegistering) {
-          alert("Account created successfully! Please log in.");
-          setIsRegistering(false);
-        } else {
-          onLogin(data.email);
-        }
+      const { data } = await api.post(endpoint, { email, password });
+
+      if (isRegistering) {
+        alert("Account created successfully! Please log in.");
+        setIsRegistering(false);
       } else {
-        setError(data.detail || 'An error occurred. Please try again.');
+        localStorage.setItem('token', data.access_token);
+        onLogin(data.email);
       }
     } catch (err) {
-      setError('Cannot connect to the server.');
+      setError(err.response?.data?.detail || 'Cannot connect to the server.');
     } finally {
       setIsLoading(false);
     }
