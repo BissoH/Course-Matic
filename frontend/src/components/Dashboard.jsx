@@ -1,9 +1,23 @@
 import React, {useState} from "react";
-import {Upload, AlertTriangle, CheckCircle, Eye , X, Trash2, Download} from 'lucide-react';
+import {Upload, AlertTriangle, CheckCircle, Eye , X, Trash2, Download, Sparkles, Loader2} from 'lucide-react';
+import api from '../utils/api';
 
 const Dashboard = ({onUpload, documents = [], onDelete }) => 
 {
-  const[selectedDoc, setSelectedDoc] = useState(null);
+  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [generatingId, setGeneratingId] = useState(null);
+
+  const handleGenerateQuiz = async (docId) => {
+    setGeneratingId(docId);
+    try {
+      const { data } = await api.post(`/quiz/generate?doc_id=${docId}`);
+      alert(`Quiz generated! Quiz ID: ${data.quiz_id}`);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to generate quiz.');
+    } finally {
+      setGeneratingId(null);
+    }
+  };
 
 
     return (
@@ -102,7 +116,19 @@ const Dashboard = ({onUpload, documents = [], onDelete }) =>
                     </a>
                   )}
                   
-                  <button 
+                  <button
+                    onClick={() => handleGenerateQuiz(doc.id)}
+                    disabled={generatingId === doc.id}
+                    className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50"
+                    title="Generate Quiz"
+                  >
+                    {generatingId === doc.id
+                      ? <Loader2 className="w-5 h-5 animate-spin" />
+                      : <Sparkles className="w-5 h-5" />
+                    }
+                  </button>
+
+                  <button
                     onClick={() => onDelete(doc.id)}
                     className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="Delete"
