@@ -17,14 +17,15 @@ def get_quiz_from_ollama(text):
 
     prompt = f"""
     Read this lecture text and make {num_qs} multiple choice questions.
-    Return ONLY a JSON array. No markdown, no intro text, just the raw JSON.
+    Return ONLY a JSON object with a single key "questions" containing an array.
+    No markdown, no intro text, just the raw JSON.
     Format example:
-    [{{
+    {{"questions": [{{
         "question": "...",
-        "options": ["A", "B", "C", "D"],
-        "answer": "B",
+        "options": ["option A text", "option B text", "option C text", "option D text"],
+        "answer": "A",
         "explanation": "..."
-    }}]
+    }}]}}
 
     Text:
     {text[:4000]}
@@ -43,8 +44,10 @@ def get_quiz_from_ollama(text):
 
         with urllib.request.urlopen(req) as res:
             data = json.loads(res.read().decode('utf-8'))
-            quiz = json.loads(data.get("response", "[]"))
-            return quiz
+            parsed = json.loads(data.get("response", "{}"))
+            if isinstance(parsed, list):
+                return parsed
+            return parsed.get("questions", [])
 
     except Exception as e:
         print("ERROR fetching from ollama:", e)
