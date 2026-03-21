@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from './utils/api';
 import { Menu } from 'lucide-react'; 
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
@@ -13,7 +14,7 @@ function App() {
   const handleLogin = (email) => {
     setUserEmail(email);
     setIsLoggedIn(true);
-    fetchDocuments(email);
+    fetchDocuments();
   };
 
   const handleLogout = () => {
@@ -27,13 +28,10 @@ function App() {
   
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  const fetchDocuments = async (email) => {
+  const fetchDocuments = async () => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/documents?email=${email}`);
-      if (response.ok) {
-        const data = await response.json();
-        setDocuments(data);
-      }
+      const { data } = await api.get('/documents');
+      setDocuments(data);
     } catch (error) {
       console.error("Failed to fetch documents:", error);
     }
@@ -44,18 +42,10 @@ function App() {
     if (!isConfirmed) return;
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/documents/${docId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-
-        setDocuments(documents.filter(doc => doc.id !== docId));
-      } else {
-        alert("Failed to delete file.");
-      }
+      await api.delete(`/documents/${docId}`);
+      setDocuments(documents.filter(doc => doc.id !== docId));
     } catch (error) {
-      console.error("Error deleting file:", error);
+      alert("Failed to delete file.");
     }
   };
 
@@ -63,36 +53,17 @@ function App() {
     const file = event.target.files[0];
     if (!file) return;
 
-   
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('email', userEmail); 
 
     try {
-      
-      const response = await fetch('http://127.0.0.1:8000/upload', {
-        method: 'POST',
-        
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        alert(`File "${file.name}" uploaded successfully!`);
-        
-        fetchDocuments(userEmail);
-
-
-      } else {
-        alert('Upload failed: ' + (data.detail || 'Unknown error'));
-      }
+      await api.post('/upload', formData);
+      alert(`File "${file.name}" uploaded successfully!`);
+      fetchDocuments();
     } catch (error) {
-      console.error('Error uploading file:', error);
-      alert('Cannot connect to the server to upload the file.');
+      alert('Upload failed: ' + (error.response?.data?.detail || 'Unknown error'));
     }
 
-    
     event.target.value = null;
   };
 
