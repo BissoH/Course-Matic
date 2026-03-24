@@ -1,17 +1,19 @@
 import React, {useState} from "react";
 import {Upload, AlertTriangle, CheckCircle, Eye , X, Trash2, Download, Sparkles, Loader2} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
 const Dashboard = ({onUpload, documents = [], onDelete }) => 
 {
   const [selectedDoc, setSelectedDoc] = useState(null);
+  const navigate = useNavigate();
   const [generatingId, setGeneratingId] = useState(null);
 
   const handleGenerateQuiz = async (docId) => {
     setGeneratingId(docId);
     try {
       const { data } = await api.post(`/quiz/generate?doc_id=${docId}`);
-      alert(`Quiz generated! Quiz ID: ${data.quiz_id}`);
+      navigate(`/quiz/${data.quiz_id}`);
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to generate quiz.');
     } finally {
