@@ -8,6 +8,11 @@ const QuizView = () => {
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedAnswers, setSelectedAnswers] = useState({});
+
+  const handleSelect = (questionId, optionKey) => {
+    setSelectedAnswers((prev) => ({ ...prev, [questionId]: optionKey }));
+  };
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -39,13 +44,6 @@ const QuizView = () => {
     );
   }
 
-  const options = [
-    { key: 'A', value: quiz.questions[0]?.option_a },
-    { key: 'B', value: quiz.questions[0]?.option_b },
-    { key: 'C', value: quiz.questions[0]?.option_c },
-    { key: 'D', value: quiz.questions[0]?.option_d },
-  ];
-
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6 pb-24">
       <div className="flex items-center gap-3">
@@ -70,17 +68,31 @@ const QuizView = () => {
               { key: 'B', value: q.option_b },
               { key: 'C', value: q.option_c },
               { key: 'D', value: q.option_d },
-            ].map(({ key, value }) => (
-              <div
-                key={key}
-                className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50"
-              >
-                <span className="w-7 h-7 flex items-center justify-center rounded-full bg-white border border-gray-300 text-sm font-bold text-gray-600 shrink-0">
-                  {key}
-                </span>
-                <span className="text-gray-700">{value}</span>
-              </div>
-            ))}
+            ].map(({ key, value }) => {
+              const isSelected = selectedAnswers[q.id] === key;
+              return (
+                <div
+                  key={key}
+                  onClick={() => handleSelect(q.id, key)}
+                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                    isSelected
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className={`w-7 h-7 flex items-center justify-center rounded-full border text-sm font-bold shrink-0 transition-all ${
+                    isSelected
+                      ? 'bg-blue-500 border-blue-500 text-white'
+                      : 'bg-white border-gray-300 text-gray-600'
+                  }`}>
+                    {key}
+                  </span>
+                  <span className={`${isSelected ? 'text-blue-700 font-medium' : 'text-gray-700'}`}>
+                    {value}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       ))}
