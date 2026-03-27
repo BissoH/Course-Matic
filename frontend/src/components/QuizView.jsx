@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { FileText, Loader2 } from 'lucide-react';
+import { FileText, Loader2, CheckCircle } from 'lucide-react';
 import api from '../utils/api';
 
 const QuizView = () => {
@@ -9,9 +9,28 @@ const QuizView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedAnswers, setSelectedAnswers] = useState({});
+  const [results, setResults] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSelect = (questionId, optionKey) => {
+    if (results) return;
     setSelectedAnswers((prev) => ({ ...prev, [questionId]: optionKey }));
+  };
+
+  const handleSubmit = async () => {
+    if (Object.keys(selectedAnswers).length !== quiz.questions.length) {
+      alert('Please answer all questions before submitting.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const { data } = await api.post(`/quiz/${quizId}/submit`, { answers: selectedAnswers });
+      setResults(data);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Submission failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   useEffect(() => {
@@ -46,6 +65,19 @@ const QuizView = () => {
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6 pb-24">
+
+      {results && (
+        <div className="flex items-center gap-4 bg-green-50 border border-green-200 rounded-2xl p-5">
+          <CheckCircle className="text-green-500 w-8 h-8 shrink-0" />
+          <div>
+            <p className="text-green-800 font-bold text-xl">
+              Score: {results.score} / {results.total}
+            </p>
+            <p className="text-green-600 text-sm">{results.percentage}% — Quiz complete</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-3">
         <div className="bg-blue-100 p-3 rounded-2xl">
           <FileText className="text-blue-600 w-6 h-6" />
@@ -74,7 +106,7 @@ const QuizView = () => {
                 <div
                   key={key}
                   onClick={() => handleSelect(q.id, key)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${results ? 'cursor-default' : 'cursor-pointer'} ${
                     isSelected
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100'
@@ -96,6 +128,23 @@ const QuizView = () => {
           </div>
         </div>
       ))}
+
+      {!results && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg">
+          <div className="max-w-3xl mx-auto">
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isSubmitting
+                ? <><Loader2 className="w-5 h-5 animate-spin" /> Submitting...</>
+                : <>Submit Quiz — {Object.keys(selectedAnswers).length}/{quiz.questions.length} answered</>
+              }
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
