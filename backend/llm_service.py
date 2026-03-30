@@ -16,16 +16,23 @@ def get_quiz_from_ollama(text):
 
 
     prompt = f"""
-    Read this lecture text and make {num_qs} multiple choice questions.
-    Return ONLY a JSON object with a single key "questions" containing an array.
-    No markdown, no intro text, just the raw JSON.
-    Format example:
-    {{"questions": [{{
-        "question": "...",
-        "options": ["option A text", "option B text", "option C text", "option D text"],
-        "answer": "A",
-        "explanation": "..."
-    }}]}}
+    Analyze the following provided course material and generate {num_qs} multiple-choice questions.
+
+    CRITICAL FORMATTING RULES:
+    1. Base all questions strictly on the provided content.
+    2. For each question, identify a specific sub-topic (e.g., 'DevOps Basics', 'Team Collaboration').
+    3. IMPORTANT: Do NOT include letters (A, B, C, D) in the option strings. Provide the raw text only.
+
+    Return ONLY a JSON object:
+    {{
+        "questions": [{{
+            "question": "The actual question text?",
+            "topic": "Sub-topic Name",
+            "options": ["Raw option 1", "Raw option 2", "Raw option 3", "Raw option 4"],
+            "answer": "A",
+            "explanation": "Brief explanation why A is correct..."
+        }}]
+    }}
 
     Text:
     {text[:4000]}

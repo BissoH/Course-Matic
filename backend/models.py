@@ -10,6 +10,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     documents = relationship("Document", back_populates="owner")
+    quiz_attempts = relationship("QuizAttempt", back_populates="user")
 
 class Document(Base):
     __tablename__ = "documents"
@@ -61,3 +62,28 @@ class UserAnswer(Base):
 
     user = relationship("User")
     question = relationship("Question", back_populates="user_answers")
+
+class QuizAttempt(Base):
+    __tablename__ = "quiz_attempts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    quiz_id = Column(Integer, ForeignKey("quizzes.id"))
+    overall_score = Column(Integer)
+    total_questions = Column(Integer)
+    completed_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="quiz_attempts")
+    quiz = relationship("Quiz")
+    topic_performances = relationship("TopicPerformance", back_populates="attempt")
+
+class TopicPerformance(Base):
+    __tablename__ = "topic_performances"
+
+    id = Column(Integer, primary_key=True, index=True)
+    attempt_id = Column(Integer, ForeignKey("quiz_attempts.id"))
+    topic_name = Column(String)
+    correct_count = Column(Integer)
+    total_count = Column(Integer)
+
+    attempt = relationship("QuizAttempt", back_populates="topic_performances")
