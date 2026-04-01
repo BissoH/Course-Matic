@@ -127,7 +127,8 @@ def generate_quiz(doc_id: int, db: Session = Depends(get_db), current_user: mode
             option_c=options[2] if len(options) > 2 else "",
             option_d=options[3] if len(options) > 3 else "",
             correct_answer=q.get("answer", ""),
-            explanation=q.get("explanation", "")
+            explanation=q.get("explanation", ""),
+            topic=q.get("topic", "General")
         )
         db.add(question)
 
@@ -194,6 +195,7 @@ def submit_quiz(
 
     score = 0
     breakdown = []
+    topic_map = {}  # { topic_name: {"correct": int, "total": int} }
 
     for question in quiz.questions:
         selected = submission.answers.get(question.id)
@@ -203,6 +205,13 @@ def submit_quiz(
         is_correct = selected.strip().upper() == question.correct_answer.strip().upper()
         if is_correct:
             score += 1
+
+        topic = question.topic or "General"
+        if topic not in topic_map:
+            topic_map[topic] = {"correct": 0, "total": 0}
+        topic_map[topic]["total"] += 1
+        if is_correct:
+            topic_map[topic]["correct"] += 1
 
         db.add(models.UserAnswer(
             user_id=current_user.id,
@@ -222,15 +231,40 @@ def submit_quiz(
             "correct_answer": question.correct_answer,
             "is_correct": is_correct,
             "explanation": question.explanation,
+            "topic": topic,
         })
+
+    total = len(quiz.questions)
+
+    attempt = models.QuizAttempt(
+        user_id=current_user.id,
+        quiz_id=quiz_id,
+        overall_score=score,
+        total_questions=total,
+    )
+    db.add(attempt)
+    db.flush()
+
+    for topic_name, counts in topic_map.items():
+        db.add(models.TopicPerformance(
+            attempt_id=attempt.id,
+            topic_name=topic_name,
+            correct_count=counts["correct"],
+            total_count=counts["total"],
+        ))
 
     db.commit()
 
-    total = len(quiz.questions)
+    topic_breakdown = {
+        topic: {"score": f"{v['correct']}/{v['total']}", "correct": v["correct"], "total": v["total"]}
+        for topic, v in topic_map.items()
+    }
+
     return {
         "quiz_id": quiz_id,
         "score": score,
         "total": total,
         "percentage": round((score / total) * 100, 1) if total > 0 else 0,
         "breakdown": breakdown,
+        "topic_breakdown": topic_breakdown,
     }

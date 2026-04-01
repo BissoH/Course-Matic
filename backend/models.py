@@ -46,6 +46,7 @@ class Question(Base):
     option_d = Column(String)
     correct_answer = Column(String)
     explanation = Column(String)
+    topic = Column(String, default="General")
 
     quiz = relationship("Quiz", back_populates="questions")
     user_answers = relationship("UserAnswer", back_populates="question")
