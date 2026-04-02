@@ -67,15 +67,47 @@ const QuizView = () => {
     <div className="p-6 max-w-3xl mx-auto space-y-6 pb-24">
 
       {results && (
-        <div className="flex items-center gap-4 bg-green-50 border border-green-200 rounded-2xl p-5">
-          <CheckCircle className="text-green-500 w-8 h-8 shrink-0" />
-          <div>
-            <p className="text-green-800 font-bold text-xl">
-              Score: {results.score} / {results.total}
-            </p>
-            <p className="text-green-600 text-sm">{results.percentage}% — Quiz complete</p>
+        <>
+          <div className="flex items-center gap-4 bg-green-50 border border-green-200 rounded-2xl p-5">
+            <CheckCircle className="text-green-500 w-8 h-8 shrink-0" />
+            <div>
+              <p className="text-green-800 font-bold text-xl">
+                Score: {results.score} / {results.total}
+              </p>
+              <p className="text-green-600 text-sm">{results.percentage}% — Quiz complete</p>
+            </div>
           </div>
-        </div>
+
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-3">
+            <h2 className="font-bold text-gray-900 text-lg">Knowledge Gap Summary</h2>
+            {Object.entries(results.topic_breakdown).map(([topic, data]) => {
+              const pct = data.total > 0 ? (data.correct / data.total) * 100 : 0;
+              const isStrong = pct >= 80;
+              const isWeak = pct < 50;
+              const colours = isStrong
+                ? { bar: 'bg-green-500', text: 'text-green-700', bg: 'bg-green-50', border: 'border-green-200' }
+                : isWeak
+                ? { bar: 'bg-red-400',   text: 'text-red-700',   bg: 'bg-red-50',   border: 'border-red-200'   }
+                : { bar: 'bg-amber-400', text: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' };
+
+              return (
+                <div key={topic} className={`flex items-center justify-between p-3 rounded-xl border ${colours.bg} ${colours.border}`}>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-800 text-sm">{topic}</span>
+                    {isWeak && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">
+                        Weak Area
+                      </span>
+                    )}
+                  </div>
+                  <span className={`text-sm font-bold ${colours.text}`}>
+                    {data.correct}/{data.total}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <div className="flex items-center gap-3">
