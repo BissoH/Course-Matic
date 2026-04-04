@@ -6,19 +6,21 @@ import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import QuizView from './components/QuizView';
+import HistoryView from './components/HistoryView';
 
 function AppContent({ onLogout, documents, onUpload, onDelete }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isNavbarOpen, setIsNavbarOpen] = useState(false);
 
-  const activeTab = location.pathname.startsWith('/quiz') ? 'quiz'
+  const activeTab = location.pathname.startsWith('/history') ? 'quiz'
+    : location.pathname.startsWith('/quiz') ? 'quiz'
     : location.pathname.startsWith('/feedback') ? 'feedback'
     : 'dashboard';
 
   const handleNavigate = (tab) => {
     if (tab === 'dashboard') navigate('/');
-    else if (tab === 'quiz') navigate('/quiz');
+    else if (tab === 'quiz') navigate('/history');
     else if (tab === 'feedback') navigate('/feedback');
     setIsNavbarOpen(false);
   };
@@ -47,6 +49,7 @@ function AppContent({ onLogout, documents, onUpload, onDelete }) {
             <Dashboard onUpload={onUpload} documents={documents} onDelete={onDelete} />
           } />
           <Route path="/quiz/:quizId" element={<QuizView />} />
+          <Route path="/history" element={<HistoryView />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>

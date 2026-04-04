@@ -126,7 +126,7 @@ def generate_quiz(doc_id: int, db: Session = Depends(get_db), current_user: mode
             option_b=options[1] if len(options) > 1 else "",
             option_c=options[2] if len(options) > 2 else "",
             option_d=options[3] if len(options) > 3 else "",
-            correct_answer=q.get("answer", ""),
+            correct_answer=q.get("answer", "").strip().upper()[:1],
             explanation=q.get("explanation", ""),
             topic=q.get("topic", "General")
         )
@@ -268,3 +268,24 @@ def submit_quiz(
         "breakdown": breakdown,
         "topic_breakdown": topic_breakdown,
     }
+
+@app.get("/history")
+def get_history(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    attempts = (
+        db.query(models.QuizAttempt)
+        .filter(models.QuizAttempt.user_id == current_user.id)
+        .order_by(models.QuizAttempt.completed_at.desc())
+        .all()
+    )
+    return [
+        {
+            "attempt_id": a.id,
+            "quiz_id": a.quiz_id,
+            "quiz_title": a.quiz.title if a.quiz else "Unknown Quiz",
+            "score": a.overall_score,
+            "total": a.total_questions,
+            "percentage": round((a.overall_score / a.total_questions) * 100, 1) if a.total_questions else 0,
+            "completed_at": a.completed_at,
+        }
+        for a in attempts
+    ]

@@ -22,6 +22,8 @@ def get_quiz_from_ollama(text):
     1. Base all questions strictly on the provided content.
     2. For each question, identify a specific sub-topic (e.g., 'DevOps Basics', 'Team Collaboration').
     3. IMPORTANT: Do NOT include letters (A, B, C, D) in the option strings. Provide the raw text only.
+    4. NEVER use "None of the above", "All of the above", or "Both A and B" as options.
+    5. The "answer" field must be a single letter ONLY: "A", "B", "C", or "D". No extra text.
 
     Return ONLY a JSON object:
     {{
