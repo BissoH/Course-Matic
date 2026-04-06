@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, ClipboardList } from 'lucide-react';
+import { Loader2, ClipboardList, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
 const HistoryView = () => {
+  const navigate = useNavigate();
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -65,7 +67,7 @@ const HistoryView = () => {
               : { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-700' };
 
             return (
-              <div key={a.attempt_id} className={`bg-white rounded-2xl border ${colours.border} shadow-sm p-5 flex items-center justify-between`}>
+              <div key={a.attempt_id} onClick={() => navigate(`/review/${a.attempt_id}`)} className={`bg-white rounded-2xl border ${colours.border} shadow-sm p-5 flex items-center justify-between cursor-pointer active:scale-95 transition-transform`}>
                 <div className="space-y-1 overflow-hidden">
                   <p className="font-semibold text-gray-900 truncate">{a.quiz_title}</p>
                   <p className="text-gray-400 text-xs">
@@ -80,6 +82,7 @@ const HistoryView = () => {
                     {a.percentage}%
                   </span>
                   <span className="text-gray-500 text-sm font-medium">{a.score}/{a.total}</span>
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
                 </div>
               </div>
             );

@@ -269,6 +269,60 @@ def submit_quiz(
         "topic_breakdown": topic_breakdown,
     }
 
+@app.get("/history/{attempt_id}")
+def get_attempt_detail(attempt_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    attempt = db.query(models.QuizAttempt).filter(
+        models.QuizAttempt.id == attempt_id,
+        models.QuizAttempt.user_id == current_user.id
+    ).first()
+    if not attempt:
+        raise HTTPException(status_code=404, detail="Attempt not found")
+
+    topic_breakdown = [
+        {
+            "topic": tp.topic_name,
+            "correct": tp.correct_count,
+            "total": tp.total_count,
+            "percentage": round((tp.correct_count / tp.total_count) * 100, 1) if tp.total_count else 0,
+        }
+        for tp in attempt.topic_performances
+    ]
+
+    questions_review = []
+    for question in attempt.quiz.questions:
+        user_answer = (
+            db.query(models.UserAnswer)
+            .filter(
+                models.UserAnswer.question_id == question.id,
+                models.UserAnswer.user_id == current_user.id,
+            )
+            .order_by(models.UserAnswer.attempted_at.desc())
+            .first()
+        )
+        questions_review.append({
+            "question_text": question.question_text,
+            "topic": question.topic,
+            "option_a": question.option_a,
+            "option_b": question.option_b,
+            "option_c": question.option_c,
+            "option_d": question.option_d,
+            "correct_answer": question.correct_answer,
+            "your_answer": user_answer.selected_answer if user_answer else None,
+            "is_correct": user_answer.is_correct if user_answer else False,
+            "explanation": question.explanation,
+        })
+
+    return {
+        "attempt_id": attempt.id,
+        "quiz_title": attempt.quiz.title if attempt.quiz else "Unknown Quiz",
+        "score": attempt.overall_score,
+        "total": attempt.total_questions,
+        "percentage": round((attempt.overall_score / attempt.total_questions) * 100, 1) if attempt.total_questions else 0,
+        "completed_at": attempt.completed_at,
+        "topic_breakdown": topic_breakdown,
+        "questions_review": questions_review,
+    }
+
 @app.get("/history")
 def get_history(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     attempts = (

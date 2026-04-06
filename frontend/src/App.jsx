@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import QuizView from './components/QuizView';
 import HistoryView from './components/HistoryView';
+import QuizReview from './components/QuizReview';
 
 function AppContent({ onLogout, documents, onUpload, onDelete }) {
   const navigate = useNavigate();
@@ -50,6 +51,7 @@ function AppContent({ onLogout, documents, onUpload, onDelete }) {
           } />
           <Route path="/quiz/:quizId" element={<QuizView />} />
           <Route path="/history" element={<HistoryView />} />
+          <Route path="/review/:attemptId" element={<QuizReview />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
