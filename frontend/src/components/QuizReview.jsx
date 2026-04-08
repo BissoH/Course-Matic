@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle, XCircle, Sparkles } from 'lucide-react';
 import api from '../utils/api';
 
 const QuizReview = () => {
@@ -9,6 +9,21 @@ const QuizReview = () => {
   const [attempt, setAttempt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [masteringTopic, setMasteringTopic] = useState(null);
+
+  const handleMasterTopic = async (topicName) => {
+    setMasteringTopic(topicName);
+    try {
+      const { data } = await api.post(
+        `/quiz/generate?doc_id=${attempt.doc_id}&target_topic=${encodeURIComponent(topicName)}`
+      );
+      navigate(`/quiz/${data.quiz_id}`);
+    } catch (err) {
+      alert('Could not generate targeted quiz. Please try again.');
+    } finally {
+      setMasteringTopic(null);
+    }
+  };
 
   useEffect(() => {
     const fetchAttempt = async () => {
@@ -87,6 +102,19 @@ const QuizReview = () => {
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">
                     Needs Work
                   </span>
+                )}
+                {isWeak && (
+                  <button
+                    onClick={() => handleMasterTopic(t.topic)}
+                    disabled={masteringTopic === t.topic}
+                    className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors disabled:opacity-50"
+                  >
+                    {masteringTopic === t.topic
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : <Sparkles className="w-3 h-3" />
+                    }
+                    Master this Topic
+                  </button>
                 )}
               </div>
               <span className={`text-sm font-bold ${colours.text}`}>{t.correct}/{t.total}</span>

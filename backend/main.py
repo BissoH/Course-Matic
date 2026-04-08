@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import Dict
+from typing import Dict, Optional
 import os
 import shutil
 import models
@@ -99,7 +99,7 @@ def get_documents(db: Session = Depends(get_db), current_user: models.User = Dep
     return current_user.documents
 
 @app.post("/quiz/generate")
-def generate_quiz(doc_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+def generate_quiz(doc_id: int, target_topic: Optional[str] = None, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     doc = db.query(models.Document).filter(models.Document.id == doc_id, models.Document.user_id == current_user.id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -109,11 +109,12 @@ def generate_quiz(doc_id: int, db: Session = Depends(get_db), current_user: mode
     if not text:
         raise HTTPException(status_code=422, detail="Could not extract text from document")
 
-    raw_questions = get_quiz_from_ollama(text)
+    raw_questions = get_quiz_from_ollama(text, target_topic=target_topic)
     if not raw_questions:
         raise HTTPException(status_code=502, detail="AI failed to generate questions")
 
-    quiz = models.Quiz(document_id=doc.id, title=f"Quiz: {doc.filename}")
+    title = f"Targeted: {target_topic}" if target_topic else f"Quiz: {doc.filename}"
+    quiz = models.Quiz(document_id=doc.id, title=title)
     db.add(quiz)
     db.flush()
 
@@ -315,6 +316,7 @@ def get_attempt_detail(attempt_id: int, db: Session = Depends(get_db), current_u
     return {
         "attempt_id": attempt.id,
         "quiz_title": attempt.quiz.title if attempt.quiz else "Unknown Quiz",
+        "doc_id": attempt.quiz.document_id if attempt.quiz else None,
         "score": attempt.overall_score,
         "total": attempt.total_questions,
         "percentage": round((attempt.overall_score / attempt.total_questions) * 100, 1) if attempt.total_questions else 0,
