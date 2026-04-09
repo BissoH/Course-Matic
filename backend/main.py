@@ -325,6 +325,63 @@ def get_attempt_detail(attempt_id: int, db: Session = Depends(get_db), current_u
         "questions_review": questions_review,
     }
 
+@app.get("/analytics")
+def get_analytics(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    attempts = (
+        db.query(models.QuizAttempt)
+        .filter(models.QuizAttempt.user_id == current_user.id)
+        .all()
+    )
+
+    total_quizzes = len(attempts)
+
+    if total_quizzes == 0:
+        return {
+            "total_quizzes_taken": 0,
+            "overall_average_percentage": 0,
+            "topic_summary": [],
+            "weakest_topics": [],
+        }
+
+    overall_average = round(
+        sum(
+            (a.overall_score / a.total_questions * 100)
+            for a in attempts if a.total_questions
+        ) / total_quizzes,
+        1
+    )
+
+    topic_map = {}
+    for attempt in attempts:
+        for tp in attempt.topic_performances:
+            name = tp.topic_name
+            if name not in topic_map:
+                topic_map[name] = {"correct": 0, "total": 0}
+            topic_map[name]["correct"] += tp.correct_count
+            topic_map[name]["total"] += tp.total_count
+
+    topic_summary = [
+        {
+            "topic": name,
+            "correct": counts["correct"],
+            "total": counts["total"],
+            "percentage": round((counts["correct"] / counts["total"]) * 100, 1) if counts["total"] else 0,
+        }
+        for name, counts in topic_map.items()
+    ]
+
+    weakest_topics = sorted(
+        [t for t in topic_summary if t["total"] > 0],
+        key=lambda t: t["percentage"]
+    )[:3]
+
+    return {
+        "total_quizzes_taken": total_quizzes,
+        "overall_average_percentage": overall_average,
+        "topic_summary": sorted(topic_summary, key=lambda t: t["percentage"]),
+        "weakest_topics": weakest_topics,
+    }
+
 @app.get("/history")
 def get_history(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     attempts = (
