@@ -1,170 +1,131 @@
-import React, {useState} from "react";
-import {Upload, AlertTriangle, CheckCircle, Eye , X, Trash2, Download, Sparkles, Loader2} from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { AlertTriangle, ClipboardList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
-const Dashboard = ({onUpload, documents = [], onDelete }) => 
-{
-  const [selectedDoc, setSelectedDoc] = useState(null);
+const Dashboard = ({ documents = [] }) => {
   const navigate = useNavigate();
-  const [generatingId, setGeneratingId] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
 
-  const handleGenerateQuiz = async (docId) => {
-    setGeneratingId(docId);
-    try {
-      const { data } = await api.post(`/quiz/generate?doc_id=${docId}`);
-      navigate(`/quiz/${data.quiz_id}`);
-    } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to generate quiz.');
-    } finally {
-      setGeneratingId(null);
-    }
-  };
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [analyticsRes, historyRes] = await Promise.all([
+          api.get('/analytics'),
+          api.get('/history'),
+        ]);
+        setAnalytics(analyticsRes.data);
+        setRecentActivity(historyRes.data.slice(0, 3));
+      } catch (err) {
+        console.error('Failed to load dashboard data:', err);
+      }
+    };
+    fetchDashboardData();
+  }, []);
 
+  const weakestTopic = analytics?.weakest_topics?.[0];
 
-    return (
-        <div className="p-6 space-y-6 pb-24">
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Study Dashboard</h1>
+  return (
+    <div className="p-6 space-y-6 pb-24 max-w-3xl mx-auto">
 
-        <div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Recommended Next Steps</h2>
-        <div className="space-y-4">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
+        <p className="text-gray-400 text-sm mt-1">Your personalised learning overview</p>
+      </div>
 
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-1">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Overall Score</p>
+          <p className="text-2xl font-bold text-blue-600">
+            {analytics ? `${analytics.overall_average_percentage}%` : '—'}
+          </p>
+          <p className="text-xs text-gray-400">across all quizzes</p>
+        </div>
 
-        {/* Take quiz card */}
-        <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex items-start gap-4 active:scale-95 transition-transform cursor-pointer">
-            <div className="bg-blue-100 p-3 rounded-2xl">
-              <CheckCircle className="text-blue-600 w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900">Take Quiz</h3>
-              <p className="text-gray-500 text-sm mt-1">Test your knowledge on uploaded materials</p>
-            </div>
-          </div>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-1">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Quizzes Completed</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {analytics ? analytics.total_quizzes_taken : '—'}
+          </p>
+          <p className="text-xs text-gray-400">total attempts</p>
+        </div>
 
-          {/* Review weak topics card */}
-          <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex items-start gap-4 active:scale-95 transition-transform cursor-pointer">
-            <div className="bg-amber-100 p-3 rounded-2xl">
-              <AlertTriangle className="text-amber-600 w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900">Review Weak Topics</h3>
-              <p className="text-gray-500 text-sm mt-1">Focus on areas that need improvement</p>
-            </div>
-          </div>
-
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-1">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Primary Gap</p>
+          <p className="text-sm font-bold text-red-500 leading-tight mt-1">
+            {weakestTopic ? weakestTopic.topic : '—'}
+          </p>
+          <p className="text-xs text-gray-400">
+            {weakestTopic ? `${weakestTopic.percentage}% correct` : 'no data yet'}
+          </p>
         </div>
       </div>
 
-      {/* Upload course materials card */}
-      
-      <div className="bg-white p-8 rounded-3xl shadow-sm border-2 border-dashed border-gray-200 text-center hover:border-blue-400 transition-colors">
-        <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Upload className="text-gray-400 w-8 h-8" />
+      {weakestTopic && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-4">
+          <div className="bg-amber-100 p-2 rounded-xl shrink-0">
+            <AlertTriangle className="text-amber-600 w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-gray-900 text-sm">Recommended Action</h3>
+            <p className="text-gray-600 text-sm mt-1">
+              Your weakest area is <span className="font-semibold text-amber-700">{weakestTopic.topic}</span>.
+              We recommend a Targeted Remediation session to improve your understanding.
+            </p>
+          </div>
         </div>
-        <h3 className="font-bold text-gray-900">Upload Course Materials</h3>
-        <p className="text-gray-400 text-sm mt-2 mb-6">Drag and drop .PDF, .PPTX & .DOCX files here</p>
-        
-        <label className="block w-full cursor-pointer">
-          <span className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
-            Upload Files
-          </span>
-          <input 
-            type="file" 
-            accept=".pdf,.docx,.pptx,.txt"
-            onChange={onUpload}
-            className="hidden"
-          />
-        </label>
-      </div>
+      )}
 
-      <div className="mt-8">
-        <h3 className="font-bold text-gray-900 text-xl mb-4">Your Files</h3>
-        
-        {documents.length === 0 ? (
-          <p className="text-gray-500 italic">No files uploaded yet.</p>
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <ClipboardList className="w-4 h-4 text-gray-400" />
+          <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Recent Activity</h2>
+        </div>
+        {recentActivity.length === 0 ? (
+          <p className="text-gray-400 text-sm italic">No quizzes taken yet.</p>
         ) : (
-          <div className="grid gap-3">
-            {documents.map((doc) => (
-              <div key={doc.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-                
-                
-                <div className="flex items-center gap-3 overflow-hidden">
-                   <div className="bg-red-50 p-2 rounded-lg shrink-0">
-                      <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                   </div>
-                   <span className="font-medium text-gray-800 truncate">{doc.filename}</span>
+          <div className="space-y-2">
+            {recentActivity.map((a) => {
+              const isStrong = a.percentage >= 80;
+              const isWeak = a.percentage < 50;
+              const badgeColour = isStrong ? 'bg-green-100 text-green-700' : isWeak ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700';
+              return (
+                <div
+                  key={a.attempt_id}
+                  onClick={() => navigate(`/review/${a.attempt_id}`)}
+                  className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-center justify-between cursor-pointer active:scale-95 transition-transform"
+                >
+                  <div className="overflow-hidden">
+                    <p className="font-medium text-gray-800 text-sm truncate">{a.quiz_title}</p>
+                    <p className="text-gray-400 text-xs">
+                      {new Date(a.completed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <span className={`text-xs font-bold px-2 py-1 rounded-full shrink-0 ml-3 ${badgeColour}`}>
+                    {a.percentage}%
+                  </span>
                 </div>
-
-                
-                <div className="flex gap-2">
-                  
-                  {doc.filename.toLowerCase().endsWith('.pdf') ? (
-                    <button 
-                      onClick={() => setSelectedDoc(doc)}
-                      className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="View PDF"
-                    >
-                      <Eye className="w-5 h-5" />
-                    </button>
-                  ) : (
-                    <a 
-                      href={`http://127.0.0.1:8000/uploads/${doc.filename}`}
-                      download
-                      className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors flex"
-                      title="Download File"
-                    >
-                      <Download className="w-5 h-5" />
-                    </a>
-                  )}
-                  
-                  <button
-                    onClick={() => handleGenerateQuiz(doc.id)}
-                    disabled={generatingId === doc.id}
-                    className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50"
-                    title="Generate Quiz"
-                  >
-                    {generatingId === doc.id
-                      ? <Loader2 className="w-5 h-5 animate-spin" />
-                      : <Sparkles className="w-5 h-5" />
-                    }
-                  </button>
-
-                  <button
-                    onClick={() => onDelete(doc.id)}
-                    className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {selectedDoc && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-4xl h-[80vh] flex-col shadow-2xl">
-
-            <div className="flex items-center justify between p-4 border-b">
-              <h3 className="font-bold text-gray-800">{selectedDoc.filename}</h3>
-              <button onClick={() => setSelectedDoc(null)} className="p-2 hover:bg-gray-100 rounded-full">
-              <X className="w-6 h-6 text-gray-500" />
-              </button>
-            </div>
-
-            <iframe src={`http://127.0.0.1:8000/uploads/${selectedDoc.filename}`} className="w-full h-full bg-gray-100" title="PDF Viewer"/>
-
-            
-            </div>
-
-            </div>
-
+      
+      {documents.length === 0 && (
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 flex items-center justify-between shadow-sm">
+          <p className="text-gray-500 text-sm">No files uploaded yet.</p>
+          <button
+            onClick={() => navigate('/files')}
+            className="text-sm font-semibold text-blue-600 hover:underline"
+          >
+            Go to Files →
+          </button>
+        </div>
       )}
 
-      </div>
+    </div>
   );
 };
 

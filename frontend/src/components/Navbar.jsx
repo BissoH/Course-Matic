@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, LayoutGrid, FileText, BarChart3, LogOut, Settings } from 'lucide-react';
+import { X, LayoutGrid, FileText, BarChart3, LogOut, Settings, FolderOpen } from 'lucide-react';
 
 const Navbar = ({ isOpen, onClose, onNavigate, activeTab, onLogout }) => {
   return (
@@ -49,7 +49,17 @@ const Navbar = ({ isOpen, onClose, onNavigate, activeTab, onLogout }) => {
             <span className="font-medium">Quizzes</span>
           </button>
 
-          <button 
+          <button
+            onClick={() => onNavigate('files')}
+            className={`flex items-center w-full px-4 py-3 rounded-xl transition-all ${
+              activeTab === 'files' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+            }`}
+          >
+            <FolderOpen className="w-5 h-5 mr-3" />
+            <span className="font-medium">Files</span>
+          </button>
+
+          <button
             onClick={() => onNavigate('feedback')}
             className={`flex items-center w-full px-4 py-3 rounded-xl transition-all ${
               activeTab === 'feedback' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
