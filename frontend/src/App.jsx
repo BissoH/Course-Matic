@@ -9,6 +9,7 @@ import QuizView from './components/QuizView';
 import FilesView from './components/FilesView';
 import HistoryView from './components/HistoryView';
 import QuizReview from './components/QuizReview';
+import AnalyticsView from './components/AnalyticsView';
 
 function AppContent({ onLogout, documents, onUpload, onDelete }) {
   const navigate = useNavigate();
@@ -57,6 +58,7 @@ function AppContent({ onLogout, documents, onUpload, onDelete }) {
           <Route path="/files" element={<FilesView onUpload={onUpload} documents={documents} onDelete={onDelete} />} />
           <Route path="/history" element={<HistoryView />} />
           <Route path="/review/:attemptId" element={<QuizReview />} />
+          <Route path="/feedback" element={<AnalyticsView />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>

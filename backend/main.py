@@ -339,7 +339,7 @@ def get_analytics(db: Session = Depends(get_db), current_user: models.User = Dep
         return {
             "total_quizzes_taken": 0,
             "overall_average_percentage": 0,
-            "topic_summary": [],
+            "documents": [],
             "weakest_topics": [],
         }
 
@@ -351,34 +351,59 @@ def get_analytics(db: Session = Depends(get_db), current_user: models.User = Dep
         1
     )
 
-    topic_map = {}
+    doc_map = {}
     for attempt in attempts:
+        if not attempt.quiz or not attempt.quiz.document:
+            continue
+        doc = attempt.quiz.document
+        if doc.id not in doc_map:
+            doc_map[doc.id] = {"title": doc.filename, "topics": {}}
         for tp in attempt.topic_performances:
             name = tp.topic_name
-            if name not in topic_map:
-                topic_map[name] = {"correct": 0, "total": 0}
-            topic_map[name]["correct"] += tp.correct_count
-            topic_map[name]["total"] += tp.total_count
+            if name not in doc_map[doc.id]["topics"]:
+                doc_map[doc.id]["topics"][name] = {"correct": 0, "total": 0}
+            doc_map[doc.id]["topics"][name]["correct"] += tp.correct_count
+            doc_map[doc.id]["topics"][name]["total"] += tp.total_count
 
-    topic_summary = [
-        {
-            "topic": name,
-            "correct": counts["correct"],
-            "total": counts["total"],
-            "percentage": round((counts["correct"] / counts["total"]) * 100, 1) if counts["total"] else 0,
-        }
-        for name, counts in topic_map.items()
-    ]
+    all_topic_map = {}
+    documents = []
+    for doc_id, doc_data in doc_map.items():
+        topic_summary = sorted(
+            [
+                {
+                    "topic": name,
+                    "correct": counts["correct"],
+                    "total": counts["total"],
+                    "percentage": round((counts["correct"] / counts["total"]) * 100, 1) if counts["total"] else 0,
+                }
+                for name, counts in doc_data["topics"].items()
+            ],
+            key=lambda t: t["percentage"],
+        )
+        documents.append({
+            "doc_id": doc_id,
+            "title": doc_data["title"],
+            "topic_summary": topic_summary,
+        })
+        for t in topic_summary:
+            n = t["topic"]
+            if n not in all_topic_map:
+                all_topic_map[n] = {"correct": 0, "total": 0}
+            all_topic_map[n]["correct"] += t["correct"]
+            all_topic_map[n]["total"] += t["total"]
 
     weakest_topics = sorted(
-        [t for t in topic_summary if t["total"] > 0],
-        key=lambda t: t["percentage"]
+        [
+            {"topic": k, "percentage": round(v["correct"] / v["total"] * 100, 1)}
+            for k, v in all_topic_map.items() if v["total"] > 0
+        ],
+        key=lambda t: t["percentage"],
     )[:3]
 
     return {
         "total_quizzes_taken": total_quizzes,
         "overall_average_percentage": overall_average,
-        "topic_summary": sorted(topic_summary, key=lambda t: t["percentage"]),
+        "documents": documents,
         "weakest_topics": weakest_topics,
     }
 
