@@ -1,6 +1,23 @@
 import json
+import re
 import urllib.request
 import urllib.error
+
+
+def extract_json_block(text: str) -> dict:
+    """
+    Strips conversational filler that an LLM may prepend or append around its
+    JSON payload and returns the first complete {...} block as a parsed dict.
+    Returns an empty dict if no valid JSON block is found.
+    """
+    match = re.search(r'\{.*\}', text, re.DOTALL)
+    if not match:
+        return {}
+    try:
+        return json.loads(match.group())
+    except json.JSONDecodeError:
+        return {}
+
 
 def get_quiz_from_ollama(text, target_topic=None):
 
@@ -65,7 +82,7 @@ def get_quiz_from_ollama(text, target_topic=None):
 
         with urllib.request.urlopen(req) as res:
             data = json.loads(res.read().decode('utf-8'))
-            parsed = json.loads(data.get("response", "{}"))
+            parsed = extract_json_block(data.get("response", "{}"))
             if isinstance(parsed, list):
                 return parsed
             return parsed.get("questions", [])
