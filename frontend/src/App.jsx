@@ -10,8 +10,9 @@ import FilesView from './components/FilesView';
 import HistoryView from './components/HistoryView';
 import QuizReview from './components/QuizReview';
 import AnalyticsView from './components/AnalyticsView';
+import SettingsView from './components/SettingsView';
 
-function AppContent({ onLogout, documents, onUpload, onDelete }) {
+function AppContent({ onLogout, documents, onUpload, onDelete, userEmail }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isNavbarOpen, setIsNavbarOpen] = useState(false);
@@ -21,6 +22,7 @@ function AppContent({ onLogout, documents, onUpload, onDelete }) {
     : location.pathname.startsWith('/review') ? 'quiz'
     : location.pathname.startsWith('/files') ? 'files'
     : location.pathname.startsWith('/feedback') ? 'feedback'
+    : location.pathname.startsWith('/settings') ? 'settings'
     : 'dashboard';
 
   const handleNavigate = (tab) => {
@@ -28,6 +30,7 @@ function AppContent({ onLogout, documents, onUpload, onDelete }) {
     else if (tab === 'quiz') navigate('/history');
     else if (tab === 'files') navigate('/files');
     else if (tab === 'feedback') navigate('/feedback');
+    else if (tab === 'settings') navigate('/settings');
     setIsNavbarOpen(false);
   };
 
@@ -59,6 +62,7 @@ function AppContent({ onLogout, documents, onUpload, onDelete }) {
           <Route path="/history" element={<HistoryView />} />
           <Route path="/review/:attemptId" element={<QuizReview />} />
           <Route path="/feedback" element={<AnalyticsView />} />
+          <Route path="/settings" element={<SettingsView email={userEmail} />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
@@ -129,6 +133,7 @@ function App() {
         documents={documents}
         onUpload={handleFileUpload}
         onDelete={handleDeleteDocument}
+        userEmail={userEmail}
       />
     </BrowserRouter>
   );

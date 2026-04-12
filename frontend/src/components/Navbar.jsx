@@ -73,7 +73,12 @@ const Navbar = ({ isOpen, onClose, onNavigate, activeTab, onLogout }) => {
 
         
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-800">
-          <button className="flex items-center w-full px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-xl transition-all">
+          <button
+            onClick={() => onNavigate('settings')}
+            className={`flex items-center w-full px-4 py-3 rounded-xl transition-all ${
+              activeTab === 'settings' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+            }`}
+          >
             <Settings className="w-5 h-5 mr-3" />
             <span className="font-medium">Settings</span>
           </button>
