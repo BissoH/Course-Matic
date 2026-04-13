@@ -12,7 +12,7 @@ import QuizReview from './components/QuizReview';
 import AnalyticsView from './components/AnalyticsView';
 import SettingsView from './components/SettingsView';
 
-function AppContent({ onLogout, documents, onUpload, onDelete, userEmail }) {
+function AppContent({ onLogout, documents, onUpload, onDelete, userEmail, documentsLoaded }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isNavbarOpen, setIsNavbarOpen] = useState(false);
@@ -55,7 +55,7 @@ function AppContent({ onLogout, documents, onUpload, onDelete, userEmail }) {
       <main className="w-full">
         <Routes>
           <Route path="/" element={
-            <Dashboard onUpload={onUpload} documents={documents} onDelete={onDelete} />
+            <Dashboard onUpload={onUpload} documents={documents} onDelete={onDelete} documentsLoaded={documentsLoaded} />
           } />
           <Route path="/quiz/:quizId" element={<QuizView />} />
           <Route path="/files" element={<FilesView onUpload={onUpload} documents={documents} onDelete={onDelete} />} />
@@ -74,6 +74,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [documents, setDocuments] = useState([]);
+  const [documentsLoaded, setDocumentsLoaded] = useState(false);
 
   const handleLogin = (email) => {
     setUserEmail(email);
@@ -93,6 +94,8 @@ function App() {
       setDocuments(data);
     } catch (error) {
       console.error("Failed to fetch documents:", error);
+    } finally {
+      setDocumentsLoaded(true);
     }
   };
 
@@ -134,6 +137,7 @@ function App() {
         onUpload={handleFileUpload}
         onDelete={handleDeleteDocument}
         userEmail={userEmail}
+        documentsLoaded={documentsLoaded}
       />
     </BrowserRouter>
   );

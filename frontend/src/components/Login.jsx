@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../utils/api';
-import { LogIn, User, Lock, ArrowRight } from 'lucide-react';
+import { LogIn, User, Lock, ArrowRight, Loader2 } from 'lucide-react';
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
@@ -8,6 +8,20 @@ const Login = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState('');
+  const [backendReady, setBackendReady] = useState(false);
+
+  useEffect(() => {
+    const checkBackend = async () => {
+      try {
+        await api.get('/');
+        setBackendReady(true);
+      } catch {
+        setBackendReady(false);
+        setTimeout(checkBackend, 5000);
+      }
+    };
+    checkBackend();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,6 +52,13 @@ const Login = ({ onLogin }) => {
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
         
         
+        {!backendReady && (
+          <div className="flex items-center gap-3 bg-amber-50 border-b border-amber-200 px-6 py-3">
+            <Loader2 className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
+            <p className="text-amber-700 text-sm font-medium">Backend is starting up, this may take a minute...</p>
+          </div>
+        )}
+
         <div className="px-8 pt-10 pb-6 text-center">
           <div className="bg-blue-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-200">
             <LogIn className="text-white w-8 h-8" />

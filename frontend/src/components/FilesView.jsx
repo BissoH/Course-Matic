@@ -106,12 +106,11 @@ const FilesView = ({ onUpload, documents = [], onDelete }) => {
                 <button
                   onClick={() => handleGenerateQuiz(doc.id)}
                   disabled={generatingId === doc.id}
-                  className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50"
-                  title="Generate Quiz"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 shadow-sm shadow-blue-200"
                 >
                   {generatingId === doc.id
-                    ? <Loader2 className="w-5 h-5 animate-spin" />
-                    : <Sparkles className="w-5 h-5" />
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...</>
+                    : <><Sparkles className="w-3.5 h-3.5" /> Generate Quiz</>
                   }
                 </button>
                 <button

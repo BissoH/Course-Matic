@@ -3,7 +3,7 @@ import { AlertTriangle, ClipboardList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
-const Dashboard = ({ documents = [] }) => {
+const Dashboard = ({ documents = [], documentsLoaded = false }) => {
   const navigate = useNavigate();
   const [analytics, setAnalytics] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
@@ -113,14 +113,15 @@ const Dashboard = ({ documents = [] }) => {
       </div>
 
       
-      {documents.length === 0 && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 flex items-center justify-between shadow-sm">
-          <p className="text-gray-500 text-sm">No files uploaded yet.</p>
+      {documentsLoaded && documents.length === 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center space-y-3">
+          <p className="text-gray-700 font-medium">You haven't uploaded any course materials yet.</p>
+          <p className="text-gray-500 text-sm">Upload a file to generate your first quiz and start tracking your progress.</p>
           <button
             onClick={() => navigate('/files')}
-            className="text-sm font-semibold text-blue-600 hover:underline"
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-sm shadow-blue-200"
           >
-            Go to Files →
+            Upload your first file to get started →
           </button>
         </div>
       )}

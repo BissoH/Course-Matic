@@ -17,6 +17,10 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+@app.get("/")
+def root():
+    return {"status": "CourseMatic API is running"}
+
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 UPLOAD_DIR = "Uploads"
@@ -154,7 +158,7 @@ def get_quiz(quiz_id: int, db: Session = Depends(get_db), current_user: models.U
             "option_d": q.option_d,
         })
 
-    return {"quiz_id": quiz.id, "title": quiz.title, "questions": questions}
+    return {"quiz_id": quiz.id, "title": quiz.title, "doc_id": quiz.document_id, "questions": questions}
 
 @app.get("/documents/{doc_id}/quizzes")
 def get_quizzes_for_document(doc_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
@@ -255,6 +259,7 @@ def submit_quiz(
         ))
 
     db.commit()
+    db.refresh(attempt)
 
     topic_breakdown = {
         topic: {"score": f"{v['correct']}/{v['total']}", "correct": v["correct"], "total": v["total"]}
@@ -262,6 +267,7 @@ def submit_quiz(
     }
 
     return {
+        "attempt_id": attempt.id,
         "quiz_id": quiz_id,
         "score": score,
         "total": total,
@@ -420,6 +426,8 @@ def get_history(db: Session = Depends(get_db), current_user: models.User = Depen
             "attempt_id": a.id,
             "quiz_id": a.quiz_id,
             "quiz_title": a.quiz.title if a.quiz else "Unknown Quiz",
+            "doc_id": a.quiz.document_id if a.quiz else None,
+            "doc_title": a.quiz.document.filename if a.quiz and a.quiz.document else "Unknown Document",
             "score": a.overall_score,
             "total": a.total_questions,
             "percentage": round((a.overall_score / a.total_questions) * 100, 1) if a.total_questions else 0,

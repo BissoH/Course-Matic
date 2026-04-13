@@ -1,7 +1,70 @@
-import React, { useState, useEffect } from 'react';
-import { Loader2, ClipboardList, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Loader2, ClipboardList, ChevronRight, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+
+const DocumentGroup = ({ docTitle, attempts, navigate }) => {
+  const [open, setOpen] = useState(true);
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="bg-red-50 p-2 rounded-lg shrink-0">
+            <FileText className="w-4 h-4 text-red-500" />
+          </div>
+          <span className="font-semibold text-gray-800 text-sm truncate">{docTitle}</span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0 ml-3">
+          <span className="text-xs text-gray-400">{attempts.length} attempt{attempts.length !== 1 ? 's' : ''}</span>
+          {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-gray-100 divide-y divide-gray-100">
+          {attempts.map((a) => {
+            const isStrong = a.percentage >= 80;
+            const isWeak = a.percentage < 50;
+            const badge = isStrong
+              ? 'bg-green-100 text-green-700'
+              : isWeak
+              ? 'bg-red-100 text-red-700'
+              : 'bg-amber-100 text-amber-700';
+
+            return (
+              <div
+                key={a.attempt_id}
+                onClick={() => navigate(`/review/${a.attempt_id}`)}
+                className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 active:scale-95 transition-transform"
+              >
+                <div className="overflow-hidden">
+                  <p className="font-medium text-gray-800 text-sm truncate">{a.quiz_title}</p>
+                  <p className="text-gray-400 text-xs">
+                    {new Date(a.completed_at).toLocaleDateString('en-GB', {
+                      day: 'numeric', month: 'short', year: 'numeric',
+                      hour: '2-digit', minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-4">
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badge}`}>
+                    {a.percentage}%
+                  </span>
+                  <span className="text-gray-400 text-xs">{a.score}/{a.total}</span>
+                  <ChevronRight className="w-4 h-4 text-gray-300" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const HistoryView = () => {
   const navigate = useNavigate();
@@ -39,6 +102,13 @@ const HistoryView = () => {
     );
   }
 
+  const grouped = attempts.reduce((acc, a) => {
+    const key = a.doc_title || 'Unknown Document';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(a);
+    return acc;
+  }, {});
+
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6 pb-24">
       <div className="flex items-center gap-3">
@@ -57,36 +127,14 @@ const HistoryView = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {attempts.map((a) => {
-            const isStrong = a.percentage >= 80;
-            const isWeak = a.percentage < 50;
-            const colours = isStrong
-              ? { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', badge: 'bg-green-100 text-green-700' }
-              : isWeak
-              ? { bg: 'bg-red-50',   border: 'border-red-200',   text: 'text-red-700',   badge: 'bg-red-100 text-red-700'   }
-              : { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-700' };
-
-            return (
-              <div key={a.attempt_id} onClick={() => navigate(`/review/${a.attempt_id}`)} className={`bg-white rounded-2xl border ${colours.border} shadow-sm p-5 flex items-center justify-between cursor-pointer active:scale-95 transition-transform`}>
-                <div className="space-y-1 overflow-hidden">
-                  <p className="font-semibold text-gray-900 truncate">{a.quiz_title}</p>
-                  <p className="text-gray-400 text-xs">
-                    {new Date(a.completed_at).toLocaleDateString('en-GB', {
-                      day: 'numeric', month: 'short', year: 'numeric',
-                      hour: '2-digit', minute: '2-digit',
-                    })}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 shrink-0 ml-4">
-                  <span className={`text-sm font-bold px-3 py-1 rounded-full ${colours.badge}`}>
-                    {a.percentage}%
-                  </span>
-                  <span className="text-gray-500 text-sm font-medium">{a.score}/{a.total}</span>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                </div>
-              </div>
-            );
-          })}
+          {Object.entries(grouped).map(([docTitle, docAttempts]) => (
+            <DocumentGroup
+              key={docTitle}
+              docTitle={docTitle}
+              attempts={docAttempts}
+              navigate={navigate}
+            />
+          ))}
         </div>
       )}
     </div>

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { FileText, Loader2, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { FileText, Loader2, CheckCircle, ChevronLeft, ChevronRight, ArrowLeft, Sparkles } from 'lucide-react';
 import api from '../utils/api';
 
 const QuizView = () => {
   const { quizId } = useParams();
+  const navigate = useNavigate();
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -12,6 +13,7 @@ const QuizView = () => {
   const [results, setResults] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const [masteringTopic, setMasteringTopic] = useState(null);
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -39,7 +41,10 @@ const QuizView = () => {
     setIsSubmitting(true);
     try {
       const { data } = await api.post(`/quiz/${quizId}/submit`, { answers: selectedAnswers });
-      setResults(data);
+      const { data: history } = await api.get('/history');
+      const attemptId = data.attempt_id ?? history[0]?.attempt_id;
+      setResults({ ...data, attempt_id: attemptId });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       alert(err.response?.data?.detail || 'Submission failed. Please try again.');
     } finally {
@@ -63,9 +68,32 @@ const QuizView = () => {
     );
   }
 
+  const handleMasterTopic = async (topicName) => {
+    setMasteringTopic(topicName);
+    try {
+      const { data } = await api.post(
+        `/quiz/generate?doc_id=${quiz.doc_id}&target_topic=${encodeURIComponent(topicName)}`
+      );
+      navigate(`/quiz/${data.quiz_id}`);
+    } catch (err) {
+      alert('Could not generate targeted quiz. Please try again.');
+    } finally {
+      setMasteringTopic(null);
+    }
+  };
+
   if (results) {
     return (
       <div className="p-6 max-w-3xl mx-auto space-y-6 pb-24">
+
+        <button
+          onClick={() => navigate('/history')}
+          className="flex items-center gap-2 text-gray-500 hover:text-blue-600 transition-colors text-sm font-medium"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Quizzes
+        </button>
+
         <div className="flex items-center gap-4 bg-green-50 border border-green-200 rounded-2xl p-5">
           <CheckCircle className="text-green-500 w-8 h-8 shrink-0" />
           <div>
@@ -89,17 +117,37 @@ const QuizView = () => {
               : { text: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' };
             return (
               <div key={topic} className={`flex items-center justify-between p-3 rounded-xl border ${colours.bg} ${colours.border}`}>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-gray-800 text-sm">{topic}</span>
                   {isWeak && (
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Weak Area</span>
                   )}
+                  {!isStrong && (
+                    <button
+                      onClick={() => handleMasterTopic(topic)}
+                      disabled={!!masteringTopic}
+                      className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors disabled:opacity-50"
+                    >
+                      {masteringTopic === topic
+                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                        : <Sparkles className="w-3 h-3" />
+                      }
+                      {masteringTopic === topic ? 'Generating…' : 'Master this Topic'}
+                    </button>
+                  )}
                 </div>
-                <span className={`text-sm font-bold ${colours.text}`}>{data.correct}/{data.total}</span>
+                <span className={`text-sm font-bold shrink-0 ml-2 ${colours.text}`}>{data.correct}/{data.total}</span>
               </div>
             );
           })}
         </div>
+
+        <button
+          onClick={() => navigate(`/review/${results.attempt_id}`)}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-200"
+        >
+          Review Answers
+        </button>
       </div>
     );
   }
