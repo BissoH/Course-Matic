@@ -122,19 +122,17 @@ const QuizView = () => {
                   {isWeak && (
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Weak Area</span>
                   )}
-                  {!isStrong && (
-                    <button
-                      onClick={() => handleMasterTopic(topic)}
-                      disabled={!!masteringTopic}
-                      className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors disabled:opacity-50"
-                    >
-                      {masteringTopic === topic
-                        ? <Loader2 className="w-3 h-3 animate-spin" />
-                        : <Sparkles className="w-3 h-3" />
-                      }
-                      {masteringTopic === topic ? 'Generating…' : 'Master this Topic'}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleMasterTopic(topic)}
+                    disabled={!!masteringTopic}
+                    className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors disabled:opacity-50"
+                  >
+                    {masteringTopic === topic
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : <Sparkles className="w-3 h-3" />
+                    }
+                    {masteringTopic === topic ? 'Generating…' : isStrong ? 'Master this Topic' : 'Revise this Topic'}
+                  </button>
                 </div>
                 <span className={`text-sm font-bold shrink-0 ml-2 ${colours.text}`}>{data.correct}/{data.total}</span>
               </div>

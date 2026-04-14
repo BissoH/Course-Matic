@@ -54,7 +54,7 @@ const DocumentSection = ({ doc, navigate }) => {
         <div className="px-4 pb-4 space-y-4 border-t border-gray-100 pt-3">
           {doc.topic_summary.map((topic) => {
             const colour = getColour(topic.percentage);
-            const isWeak = topic.percentage < 80;
+            const isStrong = topic.percentage >= 80;
             const isGenerating = generatingTopic === topic.topic;
             return (
               <div key={topic.topic}>
@@ -64,20 +64,18 @@ const DocumentSection = ({ doc, navigate }) => {
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${colour.badge}`}>
                       {topic.percentage}%
                     </span>
-                    {isWeak && (
-                      <button
-                        onClick={() => handleGenerateForTopic(topic.topic)}
-                        disabled={!!generatingTopic}
-                        className="flex items-center gap-1 text-xs font-semibold text-purple-600 hover:text-purple-800 hover:bg-purple-50 px-2 py-0.5 rounded-lg transition-colors disabled:opacity-50"
-                        title={`Generate a targeted quiz on ${topic.topic}`}
-                      >
-                        {isGenerating
-                          ? <Loader2 className="w-3 h-3 animate-spin" />
-                          : <Sparkles className="w-3 h-3" />
-                        }
-                        {isGenerating ? 'Generating…' : 'Practice'}
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleGenerateForTopic(topic.topic)}
+                      disabled={!!generatingTopic}
+                      className="flex items-center gap-1 text-xs font-semibold text-purple-600 hover:text-purple-800 hover:bg-purple-50 px-2 py-0.5 rounded-lg transition-colors disabled:opacity-50"
+                      title={`Generate a targeted quiz on ${topic.topic}`}
+                    >
+                      {isGenerating
+                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                        : <Sparkles className="w-3 h-3" />
+                      }
+                      {isGenerating ? 'Generating…' : isStrong ? 'Master this Topic' : 'Revise this Topic'}
+                    </button>
                   </div>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-2">
