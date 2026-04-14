@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ArrowLeft, CheckCircle, XCircle, Sparkles } from 'lucide-react';
 import api from '../utils/api';
@@ -172,7 +172,7 @@ const QuizReview = () => {
             })}
           </div>
 
-          {!q.is_correct && q.explanation && (
+          {q.explanation && (
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
               <p className="text-xs font-bold text-blue-700 mb-1">Explanation</p>
               <p className="text-sm text-blue-800">{q.explanation}</p>

@@ -108,7 +108,11 @@ const Login = ({ onLogin }) => {
             </div>
           </div>
 
-          <button 
+          {error && (
+            <p className="text-red-500 text-sm font-medium text-center">{error}</p>
+          )}
+
+          <button
             type="submit"
             disabled={isLoading}
             className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
@@ -128,7 +132,7 @@ const Login = ({ onLogin }) => {
           <p className="text-gray-600 font-medium">
             {isRegistering ? "Already have an account?" : "Don't have an account?"}
             <button 
-              onClick={() => setIsRegistering(!isRegistering)}
+              onClick={() => { setIsRegistering(!isRegistering); setError(''); }}
               className="text-blue-600 font-bold ml-2 hover:underline focus:outline-none"
             >
               {isRegistering ? "Log In" : "Register"}
