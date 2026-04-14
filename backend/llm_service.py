@@ -24,10 +24,11 @@ def get_quiz_from_ollama(text, target_topic=None):
     if not text or len(text.strip()) == 0:
         return []
 
-    word_count = len(text.split())
-    num_qs = max(5, min(10, word_count // 200))
+    truncated = text[:20000]
+    word_count = len(truncated.split())
+    num_qs = max(5, min(10, word_count // 100))
 
-    print("DEBUG: extracted", word_count, "words")
+    print("DEBUG: using", word_count, "words (truncated)")
     print("DEBUG: asking ollama for", num_qs, "questions...", f"(targeted: {target_topic})" if target_topic else "")
 
     formatting_rules = """
@@ -56,7 +57,7 @@ def get_quiz_from_ollama(text, target_topic=None):
     {formatting_rules}
 
     Text:
-    {text[:4000]}
+    {truncated}
     """
     else:
         prompt = f"""
@@ -66,7 +67,7 @@ def get_quiz_from_ollama(text, target_topic=None):
     {formatting_rules}
 
     Text:
-    {text[:4000]}
+    {truncated}
     """
 
     try:
@@ -75,7 +76,6 @@ def get_quiz_from_ollama(text, target_topic=None):
             "model": "llama3",
             "prompt": prompt,
             "stream": False,
-            "format": "json"
         }).encode('utf-8')
 
         req = urllib.request.Request("http://localhost:11434/api/generate", data=req_data, headers={'Content-Type': 'application/json'})
