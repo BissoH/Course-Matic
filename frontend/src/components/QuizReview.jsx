@@ -174,8 +174,12 @@ const QuizReview = () => {
 
           {q.explanation && (
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-              <p className="text-xs font-bold text-blue-700 mb-1">Explanation</p>
-              <p className="text-sm text-blue-800">{q.explanation}</p>
+              <p className="text-xs font-bold text-blue-700 mb-1 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> Explanation
+              </p>
+              <p className="text-sm text-blue-800">
+                {q.explanation.replace(/^explanation:\s*/i, '')}
+              </p>
             </div>
           )}
         </div>
