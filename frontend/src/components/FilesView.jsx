@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, Eye, X, Trash2, Download, Sparkles, Loader2, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
@@ -8,6 +8,24 @@ const FilesView = ({ onUpload, documents = [], onDelete }) => {
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [generatingId, setGeneratingId] = useState(null);
   const [search, setSearch] = useState('');
+  const [llamaReady, setLlamaReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const checkLlama = async () => {
+      try {
+        await api.get('/health', { timeout: 5000 });
+        if (active) setLlamaReady(true);
+      } catch {
+        if (active) {
+          setLlamaReady(false);
+          setTimeout(checkLlama, 5000);
+        }
+      }
+    };
+    checkLlama();
+    return () => { active = false; };
+  }, []);
 
   const handleGenerateQuiz = async (docId) => {
     setGeneratingId(docId);
@@ -32,6 +50,15 @@ const FilesView = ({ onUpload, documents = [], onDelete }) => {
         <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Your Files</h1>
         <p className="text-gray-400 text-sm mt-1">Upload and manage your course materials</p>
       </div>
+
+      {!llamaReady && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 px-4 py-3 rounded-xl">
+          <Loader2 className="w-4 h-4 text-amber-600 animate-spin shrink-0 mt-0.5" />
+          <p className="text-amber-700 text-sm font-medium">
+            Llama 3 is warming up — on first start this takes around 80 seconds due to the cloud deployment. Quiz generation will be available once the model is loaded.
+          </p>
+        </div>
+      )}
 
       {/* Upload */}
       <div className="bg-white p-8 rounded-3xl shadow-sm border-2 border-dashed border-gray-200 text-center hover:border-blue-400 transition-colors">

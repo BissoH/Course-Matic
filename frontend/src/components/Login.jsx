@@ -13,8 +13,12 @@ const Login = ({ onLogin }) => {
   useEffect(() => {
     const checkBackend = async () => {
       try {
-        await api.get('/');
-        setBackendReady(true);
+        const { data } = await api.get('/', { timeout: 10000 });
+        if (data?.status === 'CourseMatic API is running') {
+          setBackendReady(true);
+        } else {
+          setTimeout(checkBackend, 5000);
+        }
       } catch {
         setBackendReady(false);
         setTimeout(checkBackend, 5000);

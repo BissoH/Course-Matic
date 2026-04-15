@@ -21,6 +21,16 @@ app = FastAPI()
 def root():
     return {"status": "CourseMatic API is running"}
 
+
+@app.get("/health")
+def health():
+    import urllib.request
+    try:
+        urllib.request.urlopen("http://localhost:11434/api/tags", timeout=3)
+        return {"status": "ready"}
+    except Exception:
+        raise HTTPException(status_code=503, detail="Llama 3 is still warming up")
+
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 UPLOAD_DIR = "Uploads"
