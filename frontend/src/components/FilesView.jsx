@@ -9,25 +9,25 @@ const FilesView = ({ onUpload, documents = [], onDelete }) => {
   const [generatingId, setGeneratingId] = useState(null);
   const [search, setSearch] = useState('');
   const [llamaReady, setLlamaReady] = useState(false);
+  const [hasTriggered, setHasTriggered] = useState(false);
 
   useEffect(() => {
+    if (!hasTriggered || llamaReady) return;
     let active = true;
     const checkLlama = async () => {
       try {
         await api.get('/health', { timeout: 5000 });
         if (active) setLlamaReady(true);
       } catch {
-        if (active) {
-          setLlamaReady(false);
-          setTimeout(checkLlama, 5000);
-        }
+        if (active) setTimeout(checkLlama, 5000);
       }
     };
     checkLlama();
     return () => { active = false; };
-  }, []);
+  }, [hasTriggered, llamaReady]);
 
   const handleGenerateQuiz = async (docId) => {
+    setHasTriggered(true);
     setGeneratingId(docId);
     try {
       const { data } = await api.post(`/quiz/generate?doc_id=${docId}`);
@@ -51,7 +51,7 @@ const FilesView = ({ onUpload, documents = [], onDelete }) => {
         <p className="text-gray-400 text-sm mt-1">Upload and manage your course materials</p>
       </div>
 
-      {!llamaReady && (
+      {hasTriggered && !llamaReady && (
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 px-4 py-3 rounded-xl">
           <Loader2 className="w-4 h-4 text-amber-600 animate-spin shrink-0 mt-0.5" />
           <p className="text-amber-700 text-sm font-medium">
