@@ -1,8 +1,12 @@
+// Quiz history screen. Attempts are grouped by the source document so users tracking progress on a single file can see all attempts together.
+// Grouping was introduced in Sprint 6 after feedback that a flat chronological list made it difficult to judge improvement on a specific document.
+
 import { useState, useEffect } from 'react';
 import { Loader2, ClipboardList, ChevronRight, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
+// DocumentGroup is extracted as a local component so each document's collapse state can be tracked independently.
 const DocumentGroup = ({ docTitle, attempts, navigate }) => {
   const [open, setOpen] = useState(true);
 
@@ -27,6 +31,7 @@ const DocumentGroup = ({ docTitle, attempts, navigate }) => {
       {open && (
         <div className="border-t border-gray-100 divide-y divide-gray-100">
           {attempts.map((a) => {
+            // Colour thresholds mirror those used across the app so the user interprets the badges consistently.
             const isStrong = a.percentage >= 80;
             const isWeak = a.percentage < 50;
             const badge = isStrong
@@ -73,6 +78,7 @@ const HistoryView = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // The /history endpoint returns attempts already sorted descending by completion time, so no client-side sort is needed before grouping.
     const fetchHistory = async () => {
       try {
         const { data } = await api.get('/history');
@@ -102,6 +108,7 @@ const HistoryView = () => {
     );
   }
 
+  // Attempts are grouped into a map keyed by document title, which preserves the server-side ordering within each group.
   const grouped = attempts.reduce((acc, a) => {
     const key = a.doc_title || 'Unknown Document';
     if (!acc[key]) acc[key] = [];

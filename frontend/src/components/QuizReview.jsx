@@ -1,3 +1,6 @@
+// Review screen for a previously submitted quiz attempt.
+// The screen reproduces the quiz, marks correct and incorrect selections, and exposes targeted remediation quizzes per topic based on performance.
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ArrowLeft, CheckCircle, XCircle, Sparkles } from 'lucide-react';
@@ -12,6 +15,7 @@ const QuizReview = () => {
   const [masteringTopic, setMasteringTopic] = useState(null);
 
   const handleMasterTopic = async (topicName) => {
+    // Targeted quizzes reuse the same source document so the LLM generates questions focused on the selected weak topic.
     setMasteringTopic(topicName);
     try {
       const { data } = await api.post(
@@ -26,6 +30,7 @@ const QuizReview = () => {
   };
 
   useEffect(() => {
+    // The detailed attempt endpoint returns both topic breakdown and per-question review in a single request so the page does not need multiple round trips.
     const fetchAttempt = async () => {
       try {
         const { data } = await api.get(`/history/${attemptId}`);
@@ -82,7 +87,7 @@ const QuizReview = () => {
         </div>
       </div>
 
-      {/* Topic breakdown */}
+      {/* Topic breakdown: the colour system is consistent with QuizView and AnalyticsView so the user builds a single visual vocabulary across the app. */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-3">
         <h2 className="font-bold text-gray-900">Categorised by Topic</h2>
         {attempt.topic_breakdown.map((t) => {
@@ -103,6 +108,7 @@ const QuizReview = () => {
                     Needs Work
                   </span>
                 )}
+                {/* The action button is rendered for every topic rather than only weak ones, which lets strong students reinforce topics they have already mastered. */}
                 <button
                   onClick={() => handleMasterTopic(t.topic)}
                   disabled={!!masteringTopic}
@@ -147,6 +153,7 @@ const QuizReview = () => {
               const isYours = key === q.your_answer;
               const isWrongPick = isYours && !isCorrect;
 
+              // Three visual states: the correct answer is always highlighted green, the user's wrong pick is highlighted red, and all other options remain neutral.
               const style = isCorrect
                 ? 'border-green-400 bg-green-50'
                 : isWrongPick
@@ -172,6 +179,7 @@ const QuizReview = () => {
             })}
           </div>
 
+          {/* The LLM occasionally prefixes its explanation with "explanation:", which is stripped here so the rendered text reads naturally. */}
           {q.explanation && (
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
               <p className="text-xs font-bold text-blue-700 mb-1 flex items-center gap-1">

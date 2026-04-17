@@ -1,24 +1,31 @@
+// Gap analysis screen showing performance broken down by document and by topic within each document.
+// The grouping by document was introduced in Sprint 6 to replace a flat topic list, which had become noisy once users uploaded several files with overlapping topic names.
+
 import { useState, useEffect } from 'react';
 import { BarChart3, ChevronDown, ChevronUp, FileText, Sparkles, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
+// Shared colour thresholds so strong, developing, and weak topics are visually consistent across the app.
 const getColour = (percentage) => {
   if (percentage >= 80) return { bar: 'bg-green-500', badge: 'bg-green-100 text-green-700' };
   if (percentage >= 50) return { bar: 'bg-amber-400', badge: 'bg-amber-100 text-amber-700' };
   return { bar: 'bg-red-500', badge: 'bg-red-100 text-red-600' };
 };
 
+// Each document is rendered as a collapsible section so users with many files can scan overall scores and only expand the documents they care about.
 const DocumentSection = ({ doc, navigate }) => {
   const [open, setOpen] = useState(true);
   const [generatingTopic, setGeneratingTopic] = useState(null);
 
+  // The document's overall percentage is computed locally from its topic summary rather than requested separately, avoiding an extra API field.
   const totalCorrect = doc.topic_summary.reduce((sum, t) => sum + t.correct, 0);
   const totalQuestions = doc.topic_summary.reduce((sum, t) => sum + t.total, 0);
   const overallPct = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
   const overallColour = getColour(overallPct);
 
   const handleGenerateForTopic = async (topicName) => {
+    // Triggers a targeted quiz generation for the specific topic, reusing the same doc_id so the LLM narrows focus without changing source material.
     setGeneratingTopic(topicName);
     try {
       const { data } = await api.post(`/quiz/generate?doc_id=${doc.doc_id}&target_topic=${encodeURIComponent(topicName)}`);
@@ -64,6 +71,7 @@ const DocumentSection = ({ doc, navigate }) => {
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${colour.badge}`}>
                       {topic.percentage}%
                     </span>
+                    {/* Button label flips between Master and Revise based on score so the action feels appropriate to the user's current state of the topic. */}
                     <button
                       onClick={() => handleGenerateForTopic(topic.topic)}
                       disabled={!!generatingTopic}
@@ -78,6 +86,7 @@ const DocumentSection = ({ doc, navigate }) => {
                     </button>
                   </div>
                 </div>
+                {/* Progress bar gives a quick visual cue of progress that complements the numeric percentage. */}
                 <div className="w-full bg-gray-100 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full transition-all duration-500 ${colour.bar}`}
@@ -100,6 +109,7 @@ const AnalyticsView = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Analytics are recomputed on the backend for every request so the view is always in sync with the latest submitted attempt.
     const fetchAnalytics = async () => {
       try {
         const { data } = await api.get('/analytics');
@@ -155,6 +165,7 @@ const AnalyticsView = () => {
         )}
       </div>
 
+      {/* Legend is only shown when there is data to interpret, keeping the empty state uncluttered. */}
       {!loading && analytics && analytics.documents.length > 0 && (
         <div className="flex gap-4 text-xs text-gray-500">
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Strong (&ge;80%)</span>

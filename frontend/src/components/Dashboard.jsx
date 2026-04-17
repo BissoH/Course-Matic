@@ -1,3 +1,6 @@
+// Main landing screen after login. Provides a high-level performance overview and directs new users towards the upload flow.
+// The Dashboard was separated from file management in Sprint 6 so it can act purely as an analytical view rather than a cluttered control panel.
+
 import React, { useState, useEffect } from "react";
 import { AlertTriangle, ClipboardList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +12,7 @@ const Dashboard = ({ documents = [], documentsLoaded = false }) => {
   const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
+    // Analytics and history are fetched in parallel with Promise.all so the page renders in a single render pass rather than progressively.
     const fetchDashboardData = async () => {
       try {
         const [analyticsRes, historyRes] = await Promise.all([
@@ -16,6 +20,7 @@ const Dashboard = ({ documents = [], documentsLoaded = false }) => {
           api.get('/history'),
         ]);
         setAnalytics(analyticsRes.data);
+        // Only the three most recent attempts are displayed here to keep the dashboard focused; the full history lives on its own page.
         setRecentActivity(historyRes.data.slice(0, 3));
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
@@ -24,6 +29,7 @@ const Dashboard = ({ documents = [], documentsLoaded = false }) => {
     fetchDashboardData();
   }, []);
 
+  // The single weakest topic drives the recommended action banner below, making the next study step explicit rather than implicit.
   const weakestTopic = analytics?.weakest_topics?.[0];
 
   return (
@@ -34,6 +40,7 @@ const Dashboard = ({ documents = [], documentsLoaded = false }) => {
         <p className="text-gray-400 text-sm mt-1">Your personalised learning overview</p>
       </div>
 
+      {/* Three top-line metric tiles: overall score, quiz count, and the primary gap topic. Dashes render while analytics are loading to avoid layout shift. */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-1">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Overall Score</p>
@@ -62,6 +69,7 @@ const Dashboard = ({ documents = [], documentsLoaded = false }) => {
         </div>
       </div>
 
+      {/* The recommended action banner is only rendered when analytics actually identify a weak topic, which avoids patronising prompts on a fresh account. */}
       {weakestTopic && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-4">
           <div className="bg-amber-100 p-2 rounded-xl shrink-0">
@@ -112,7 +120,9 @@ const Dashboard = ({ documents = [], documentsLoaded = false }) => {
         )}
       </div>
 
-      
+
+      {/* Empty-state call-to-action added in Sprint 6 after usability testing showed new users were unsure where to begin. */}
+      {/* Rendered only once documents have finished loading so the CTA does not flash briefly before the document list arrives. */}
       {documentsLoaded && documents.length === 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center space-y-3">
           <p className="text-gray-700 font-medium">You haven't uploaded any course materials yet.</p>

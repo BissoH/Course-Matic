@@ -1,3 +1,6 @@
+// Interactive quiz-taking screen using a page-by-page layout.
+// The layout was refactored from a single scrolling list in Sprint 6 after usability testing showed users were accidentally skipping questions.
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FileText, Loader2, CheckCircle, ChevronLeft, ChevronRight, ArrowLeft, Sparkles } from 'lucide-react';
@@ -9,15 +12,18 @@ const QuizView = () => {
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // Answers are tracked in a flat object keyed by question id so they can be submitted as a single payload at the end.
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [results, setResults] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // currentPage advances one question at a time, which forces a deliberate pace and prevents the "filling in a form" behaviour seen in the original list layout.
   const [currentPage, setCurrentPage] = useState(0);
   const [masteringTopic, setMasteringTopic] = useState(null);
 
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
+        // The backend does not return correct answers in this payload so the frontend cannot leak them before submission.
         const { data } = await api.get(`/quiz/${quizId}`);
         setQuiz(data);
       } catch (err) {
@@ -34,6 +40,7 @@ const QuizView = () => {
   };
 
   const handleSubmit = async () => {
+    // A client-side guard prevents partial submissions; the backend would otherwise mark unanswered questions as incorrect implicitly.
     if (Object.keys(selectedAnswers).length !== quiz.questions.length) {
       alert('Please answer all questions before submitting.');
       return;
@@ -41,9 +48,11 @@ const QuizView = () => {
     setIsSubmitting(true);
     try {
       const { data } = await api.post(`/quiz/${quizId}/submit`, { answers: selectedAnswers });
+      // History is re-fetched so the attempt_id can be recovered even if the submit response does not include it, which keeps the Review Answers button working.
       const { data: history } = await api.get('/history');
       const attemptId = data.attempt_id ?? history[0]?.attempt_id;
       setResults({ ...data, attempt_id: attemptId });
+      // The user is scrolled back to the top so the results summary is visible immediately rather than below the last answered question.
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       alert(err.response?.data?.detail || 'Submission failed. Please try again.');
@@ -69,6 +78,7 @@ const QuizView = () => {
   }
 
   const handleMasterTopic = async (topicName) => {
+    // Targeted generation reuses the same document, so the doc_id is taken from the current quiz rather than prompted from the user.
     setMasteringTopic(topicName);
     try {
       const { data } = await api.post(
@@ -82,6 +92,7 @@ const QuizView = () => {
     }
   };
 
+  // The results view replaces the quiz form once a submission is received, which keeps both states in the same URL rather than requiring a redirect.
   if (results) {
     return (
       <div className="p-6 max-w-3xl mx-auto space-y-6 pb-24">
@@ -108,6 +119,7 @@ const QuizView = () => {
           <h2 className="font-bold text-gray-900 text-lg">Knowledge Gap Summary</h2>
           {Object.entries(results.topic_breakdown).map(([topic, data]) => {
             const pct = data.total > 0 ? (data.correct / data.total) * 100 : 0;
+            // Colour thresholds chosen to give immediate visual cues: green for mastery, amber for developing, red for weak areas needing attention.
             const isStrong = pct >= 80;
             const isWeak = pct < 50;
             const colours = isStrong
@@ -122,6 +134,7 @@ const QuizView = () => {
                   {isWeak && (
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Weak Area</span>
                   )}
+                  {/* Button label adapts to the user's current performance: "Master" reinforces strong topics, "Revise" addresses weaker ones. */}
                   <button
                     onClick={() => handleMasterTopic(topic)}
                     disabled={!!masteringTopic}
@@ -154,6 +167,7 @@ const QuizView = () => {
   const q = quiz.questions[currentPage];
   const isLast = currentPage === total - 1;
   const answered = selectedAnswers[q.id];
+  // Progress is calculated on the current page rather than the number of answers so the bar advances as the user moves through the quiz.
   const progress = Math.round(((currentPage + 1) / total) * 100);
 
   return (
@@ -169,6 +183,7 @@ const QuizView = () => {
         </div>
       </div>
 
+      {/* Progress bar uses the page position so the user has a tangible sense of how far through the quiz they are. */}
       <div className="space-y-1">
         <div className="w-full bg-gray-100 rounded-full h-1.5">
           <div
@@ -218,6 +233,7 @@ const QuizView = () => {
         </div>
       </div>
 
+      {/* Back button is disabled on the first question and hidden visually via opacity rather than removed, preserving layout consistency across pages. */}
       <div className="flex gap-3">
         <button
           onClick={() => setCurrentPage((p) => p - 1)}
@@ -227,6 +243,7 @@ const QuizView = () => {
           <ChevronLeft className="w-4 h-4" /> Back
         </button>
 
+        {/* The last page swaps the Next button for Submit, which is only enabled once every question has been answered. */}
         {isLast ? (
           <button
             onClick={handleSubmit}

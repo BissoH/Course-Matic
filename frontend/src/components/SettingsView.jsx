@@ -1,3 +1,6 @@
+// Settings screen displaying the signed-in user's profile details.
+// The email is passed in as a prop from App.jsx rather than re-fetched so no additional API call is required to render the page.
+
 import { User, Trash2 } from 'lucide-react';
 
 const SettingsView = ({ email }) => {
@@ -22,6 +25,7 @@ const SettingsView = ({ email }) => {
         </div>
       </div>
 
+      {/* Danger Zone is visually separated with a red border to signal that the action below is destructive. The reset button is a placeholder flagged as future work in Chapter 6. */}
       <div className="bg-white rounded-2xl border border-red-200 shadow-sm p-6 space-y-4">
         <h2 className="text-sm font-bold text-red-600 uppercase tracking-wide">Danger Zone</h2>
         <div className="flex items-start justify-between gap-4">

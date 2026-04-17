@@ -1,3 +1,6 @@
+// Dedicated file management screen separated from the Dashboard in Sprint 6 to reduce cognitive overload identified during usability testing.
+// The Llama 3 warmup banner only appears after the user first attempts to generate a quiz, which avoids surfacing infrastructure detail during routine uploads.
+
 import { useState, useEffect } from 'react';
 import { Upload, Eye, X, Trash2, Download, Sparkles, Loader2, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -9,16 +12,20 @@ const FilesView = ({ onUpload, documents = [], onDelete }) => {
   const [generatingId, setGeneratingId] = useState(null);
   const [search, setSearch] = useState('');
   const [llamaReady, setLlamaReady] = useState(false);
+  // hasTriggered gates the warmup banner so it only appears after the user has tried to generate a quiz, rather than showing it immediately on page load.
   const [hasTriggered, setHasTriggered] = useState(false);
 
   useEffect(() => {
+    // Polling is skipped entirely if the user has not yet attempted quiz generation, or if Llama 3 has already been confirmed ready during this session.
     if (!hasTriggered || llamaReady) return;
+    // The active flag prevents setState being called after the component has unmounted, which would otherwise produce a React warning.
     let active = true;
     const checkLlama = async () => {
       try {
         await api.get('/health', { timeout: 5000 });
         if (active) setLlamaReady(true);
       } catch {
+        // A failed health check schedules another attempt in 5 seconds until the model reports ready.
         if (active) setTimeout(checkLlama, 5000);
       }
     };
@@ -27,18 +34,21 @@ const FilesView = ({ onUpload, documents = [], onDelete }) => {
   }, [hasTriggered, llamaReady]);
 
   const handleGenerateQuiz = async (docId) => {
+    // Triggering here starts the health polling so the banner can appear if generation takes longer than a few seconds.
     setHasTriggered(true);
     setGeneratingId(docId);
     try {
       const { data } = await api.post(`/quiz/generate?doc_id=${docId}`);
       navigate(`/quiz/${data.quiz_id}`);
     } catch (err) {
+      // Backend error messages are surfaced directly so the user understands why generation failed (for example, empty file or AI timeout).
       alert(err.response?.data?.detail || 'Failed to generate quiz.');
     } finally {
       setGeneratingId(null);
     }
   };
 
+  // Client-side search filter so users can locate a file without a round trip to the backend.
   const filtered = documents.filter((doc) =>
     doc.filename.toLowerCase().includes(search.toLowerCase())
   );
@@ -51,6 +61,7 @@ const FilesView = ({ onUpload, documents = [], onDelete }) => {
         <p className="text-gray-400 text-sm mt-1">Upload and manage your course materials</p>
       </div>
 
+      {/* Warmup banner shown only while a generation is pending on a cold Llama 3 instance. */}
       {hasTriggered && !llamaReady && (
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 px-4 py-3 rounded-xl">
           <Loader2 className="w-4 h-4 text-amber-600 animate-spin shrink-0 mt-0.5" />
@@ -71,6 +82,7 @@ const FilesView = ({ onUpload, documents = [], onDelete }) => {
           <span className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
             Upload Files
           </span>
+          {/* The accept attribute hints at supported formats but is not a security control; backend validation is the authoritative check. */}
           <input
             type="file"
             accept=".pdf,.docx,.pptx,.txt"
@@ -112,6 +124,7 @@ const FilesView = ({ onUpload, documents = [], onDelete }) => {
                 <span className="font-medium text-gray-800 truncate">{doc.filename}</span>
               </div>
               <div className="flex gap-2">
+                {/* PDFs are rendered in an iframe; other supported formats offer a native browser download instead, since the browser cannot render DOCX or PPTX inline. */}
                 {doc.filename.toLowerCase().endsWith('.pdf') ? (
                   <button
                     onClick={() => setSelectedDoc(doc)}
@@ -153,7 +166,7 @@ const FilesView = ({ onUpload, documents = [], onDelete }) => {
         </div>
       )}
 
-      {/* PDF Viewer Modal */}
+      {/* PDF Viewer Modal: a lightweight iframe rather than a third-party PDF library, which keeps the bundle size small as discussed in Section 4.3. */}
       {selectedDoc && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl">
